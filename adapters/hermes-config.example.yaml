@@ -1,0 +1,5 @@
+# Optional Hermes profile configuration.
+# Replace the path with this Git-tracked pack's absolute skills directory only
+# when agent-created skills are allowed to change the shared repository.
+skills:
+  create_dir: /absolute/path/to/team-agent-skills/skills

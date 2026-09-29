@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow Preflight"
+  short_description: "Select the right skills before starting work"
+  default_prompt: "Use $workflow-preflight to select the skills needed for this task before beginning."

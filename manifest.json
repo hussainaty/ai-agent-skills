@@ -1,0 +1,46 @@
+{
+  "format": "agentskills.io",
+  "version": 1,
+  "skills": [
+    {
+      "name": "agent-workflow-pipeline",
+      "description": "Coordinate Graphify, public research, implementation quality checks, Jev routing, and Needle 3 local tool calls across compatible coding agents, including Coder, TrueForge, Codex, Claude Code, OpenCode, and Hermes. Use for a cross-agent software task that needs more than one of these capabilities.",
+      "tree_sha256": "b5756f79da7383833f50c53ad8c10b5dc3e034eab084df4f0c204fbde27fc63b"
+    },
+    {
+      "name": "blender-stylized-2d-animation",
+      "description": "Build and animate stylized \"2D-look\" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender \u2014 flat colour bands, bold inverted-hull outlines, hand-drawn \"boil\" animated on twos, procedural fire, Geometry Nodes bubbles/particles, compositor glow. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or to extend the fried-egg-in-a-pan example. Not for photoreal rendering.",
+      "tree_sha256": "71934040a100299d5f7a22c595665381d5c82b86025da710a642e731b44a7862"
+    },
+    {
+      "name": "global-memory-recovery",
+      "description": "Recover or refresh the device-local Global Memory map when continuing work after an account change, handoff, or lost chat context.",
+      "tree_sha256": "5b245fcdf7d1505bf98a1a2b72ebf2fe634015d4bb58daa5636a97082be26db3"
+    },
+    {
+      "name": "product-quality-loop",
+      "description": "Plan, implement, and verify scoped software changes through working user journeys, proportionate tests, visual inspection, and authorized release checks. Use for feature work, bug fixes, UI improvements, and release completion; not read-only questions or draft-only requests.",
+      "tree_sha256": "be442b765be2b084619c272ac2459b342fb77f0d38837c405f0a4329db9425ad"
+    },
+    {
+      "name": "remote-agent-graphify",
+      "description": "Prepare and maintain Graphify repository context for coding agents running in Coder workspaces or the TrueForge harness. Use for repository exploration, architecture questions, and context refreshes; not for provisioning either platform.",
+      "tree_sha256": "f896c4a3bb41c2b05c8eba32b871e20e328ff7b1d598cf9445e5be1782e3ebb7"
+    },
+    {
+      "name": "scrapegraphai-research",
+      "description": "Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.",
+      "tree_sha256": "f1e788b4626207ae2b216a5ae2c5e0e774df62c518dc0352169c0c9df846fb69"
+    },
+    {
+      "name": "verified-code-translation",
+      "description": "Translate a codebase or module from one programming language to another \u2014 especially high-level to low-level (Python/JS/Go/Zig/C++ -> C, Rust, or assembly) \u2014 with a dependency-ordered plan, cycle and deadlock untangling, isolated implementer/adversarial-reviewer pairs in Docker containers that scale up and down, black-box equivalence testing, and a traceable evidence package suitable for safety-critical review (DO-178C, IEC 61508, IEC 60880, NASA). Use for ports, rewrites, transpilation, \"rewrite X in Rust/C\", legacy migration, or when the user asks to replace an implementation while keeping identical behaviour. Not for greenfield code or single-function snippets.",
+      "tree_sha256": "618b6c0270596f4636782e643fa69dbaa9519f102b054ee79c101086873cc6d5"
+    },
+    {
+      "name": "workflow-preflight",
+      "description": "Route a substantive coding, research, cross-agent, or production request before work begins. Select the smallest compatible set of installed skills, or explicitly conclude that no specialized skill is needed; discover an online skill only for a real capability gap. Use before work that may benefit from repository context, public research, implementation, verification, or external systems. Do not use for a direct factual answer, simple calculation, or isolated rewrite.",
+      "tree_sha256": "af07d3e5b5bc48dbd5d537c6f4f567a4689c80bc7461dec9e54f8e28f68a3a89"
+    }
+  ]
+}
