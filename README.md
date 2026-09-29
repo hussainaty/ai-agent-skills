@@ -75,6 +75,7 @@ them from the original sources, under their own licenses:
 - [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill): frontend design taste
 - [jgharbieh/agent-pods](https://github.com/jgharbieh/agent-pods) and [jgharbieh/claude-browser-stack](https://github.com/jgharbieh/claude-browser-stack): containerised agents and browser automation
 - [hamelsmu/evals-skills](https://github.com/hamelsmu/evals-skills) (`error-analysis`), [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) (`refactor-safely`), [github/awesome-copilot](https://github.com/github/awesome-copilot) (`repo-story-time`)
+- [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) (`frontend-design`, Apache-2.0) and [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills) (`senior-prompt-engineer`)
 - Graphify (the knowledge-graph tool used by `agent-workflow-pipeline` and `remote-agent-graphify`); `web-scraping` by Top of Funnel (MIT); Claude Collab by Adam Goldsmith (Apache-2.0)
 
 ## Credits
