@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.vct-run/
+worktrees/
+*.blend1
