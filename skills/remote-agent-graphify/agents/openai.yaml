@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Agent Graphs"
+  short_description: "Graphify context for Coder and TrueForge"
+  default_prompt: "Use $remote-agent-graphify to prepare this repository for an agent task."

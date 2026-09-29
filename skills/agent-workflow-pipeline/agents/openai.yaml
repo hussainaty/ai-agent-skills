@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Workflow Pipeline"
+  short_description: "Route research, code context, models, and quality checks"
+  default_prompt: "Use $agent-workflow-pipeline to prepare and execute this agent-assisted software task."

@@ -1,0 +1,35 @@
+{
+  "skill_name": "workflow-preflight",
+  "description_trigger_cases": [
+    {"id": "trigger-01", "prompt": "Map the authentication flow in this repository before fixing the refresh-token bug.", "should_trigger": true},
+    {"id": "trigger-02", "prompt": "Research the current EU accessibility rules, then update our checkout UI and test it.", "should_trigger": true},
+    {"id": "trigger-03", "prompt": "Prepare this Coder workspace so Claude Code and Codex share current Graphify context.", "should_trigger": true},
+    {"id": "trigger-04", "prompt": "Review our customer portal for exploitable security issues before launch.", "should_trigger": true},
+    {"id": "trigger-05", "prompt": "Use the browser to test the signup journey and fix the broken validation state.", "should_trigger": true},
+    {"id": "trigger-06", "prompt": "Build a new billing dashboard from the Figma file and verify the responsive layout.", "should_trigger": true},
+    {"id": "trigger-07", "prompt": "Find public sources on the latest Stripe API behavior and implement the required migration.", "should_trigger": true},
+    {"id": "trigger-08", "prompt": "Coordinate Graphify, research, an implementation, and a release check for this feature.", "should_trigger": true},
+    {"id": "trigger-09", "prompt": "We have a production bug across three services; identify the repository dependencies and ship a verified fix.", "should_trigger": true},
+    {"id": "trigger-10", "prompt": "Find a reputable skill for testing accessibility because the installed skills do not cover it.", "should_trigger": true},
+    {"id": "skip-01", "prompt": "What is 47 times 19?", "should_trigger": false},
+    {"id": "skip-02", "prompt": "Rewrite this sentence to sound friendlier: Your request failed.", "should_trigger": false},
+    {"id": "skip-03", "prompt": "Summarize the paragraph I pasted in three bullets.", "should_trigger": false},
+    {"id": "skip-04", "prompt": "Give me five short names for a note-taking app.", "should_trigger": false},
+    {"id": "skip-05", "prompt": "Explain the difference between a list and a tuple in Python.", "should_trigger": false},
+    {"id": "skip-06", "prompt": "Translate this greeting into Spanish: Good morning.", "should_trigger": false},
+    {"id": "skip-07", "prompt": "Is this regular expression valid: ^[A-Z]{2}\\d{6}$?", "should_trigger": false},
+    {"id": "skip-08", "prompt": "Convert 125 minutes to hours and minutes.", "should_trigger": false},
+    {"id": "skip-09", "prompt": "Correct the spelling in this one-line commit message.", "should_trigger": false},
+    {"id": "skip-10", "prompt": "What does HTTP stand for?", "should_trigger": false}
+  ],
+  "routing_cases": [
+    {"id": "route-01", "prompt": "Map the checkout architecture before fixing a checkout bug and verify the resulting user journey.", "required_skills": ["graphify", "product-quality-loop"], "excluded_skills": ["scrapegraphai-research", "agent-workflow-pipeline"]},
+    {"id": "route-02", "prompt": "Research current public rate-limit guidance for a provider, then update the integration and validate it.", "required_skills": ["scrapegraphai-research", "product-quality-loop"], "excluded_skills": ["agent-browser", "application-security-testing"]},
+    {"id": "route-03", "prompt": "Prepare a Coder repository so remote agents can query a current Graphify graph.", "required_skills": ["remote-agent-graphify"], "excluded_skills": ["product-quality-loop", "scrapegraphai-research"]},
+    {"id": "route-04", "prompt": "Audit the running API and web app for reachable security vulnerabilities.", "required_skills": ["application-security-testing"], "excluded_skills": ["impeccable", "agent-workflow-pipeline"]},
+    {"id": "route-05", "prompt": "Test the deployed signup journey in a browser, repair the defect, and confirm the flow works.", "required_skills": ["agent-browser", "product-quality-loop"], "excluded_skills": ["graphify", "scrapegraphai-research"]},
+    {"id": "route-06", "prompt": "Redesign the account settings UI from the existing frontend and check its responsive behavior.", "required_skills": ["impeccable", "product-quality-loop"], "excluded_skills": ["scrapegraphai-research", "application-security-testing"]},
+    {"id": "route-07", "prompt": "Coordinate repository context, current public evidence, implementation, optional Jev or Needle routing, and final verification.", "required_skills": ["agent-workflow-pipeline"], "excluded_skills": ["remote-agent-graphify"]},
+    {"id": "route-08", "prompt": "Find a mature skill for visual PDF regression testing because no installed skill can do it.", "required_skills": ["workflow-preflight"], "excluded_skills": ["product-quality-loop"]}
+  ]
+}
