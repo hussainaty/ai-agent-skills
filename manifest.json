@@ -5,7 +5,7 @@
     {
       "name": "agent-workflow-pipeline",
       "description": "Coordinate Graphify, public research, implementation quality checks, Jev routing, and Needle 3 local tool calls across compatible coding agents, including Coder, TrueForge, Codex, Claude Code, OpenCode, and Hermes. Use for a cross-agent software task that needs more than one of these capabilities.",
-      "tree_sha256": "b5756f79da7383833f50c53ad8c10b5dc3e034eab084df4f0c204fbde27fc63b"
+      "tree_sha256": "6fa523e02778811893c15e26a9b3a54bad4ca90eb04202d52993a63b0cf6eb12"
     },
     {
       "name": "blender-stylized-2d-animation",
@@ -25,7 +25,7 @@
     {
       "name": "remote-agent-graphify",
       "description": "Prepare and maintain Graphify repository context for coding agents running in Coder workspaces or the TrueForge harness. Use for repository exploration, architecture questions, and context refreshes; not for provisioning either platform.",
-      "tree_sha256": "f896c4a3bb41c2b05c8eba32b871e20e328ff7b1d598cf9445e5be1782e3ebb7"
+      "tree_sha256": "eff5bb967b6f8f7a08f03aef6bf8a8813239ad04db107c84ac38897139d08606"
     },
     {
       "name": "scrapegraphai-research",
@@ -35,12 +35,12 @@
     {
       "name": "verified-code-translation",
       "description": "Translate a codebase or module from one programming language to another \u2014 especially high-level to low-level (Python/JS/Go/Zig/C++ -> C, Rust, or assembly) \u2014 with a dependency-ordered plan, cycle and deadlock untangling, isolated implementer/adversarial-reviewer pairs in Docker containers that scale up and down, black-box equivalence testing, and a traceable evidence package suitable for safety-critical review (DO-178C, IEC 61508, IEC 60880, NASA). Use for ports, rewrites, transpilation, \"rewrite X in Rust/C\", legacy migration, or when the user asks to replace an implementation while keeping identical behaviour. Not for greenfield code or single-function snippets.",
-      "tree_sha256": "618b6c0270596f4636782e643fa69dbaa9519f102b054ee79c101086873cc6d5"
+      "tree_sha256": "50c370fe87fa850fc408e8bfe50c9a1210d773c670403cb049712a358edb9edf"
     },
     {
       "name": "workflow-preflight",
       "description": "Route a substantive coding, research, cross-agent, or production request before work begins. Select the smallest compatible set of installed skills, or explicitly conclude that no specialized skill is needed; discover an online skill only for a real capability gap. Use before work that may benefit from repository context, public research, implementation, verification, or external systems. Do not use for a direct factual answer, simple calculation, or isolated rewrite.",
-      "tree_sha256": "af07d3e5b5bc48dbd5d537c6f4f567a4689c80bc7461dec9e54f8e28f68a3a89"
+      "tree_sha256": "8591143716cff110752452d31ca8b00eba7f62aaf46eda43b7aca84ec68f027f"
     }
   ]
 }

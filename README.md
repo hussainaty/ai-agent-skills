@@ -35,7 +35,15 @@ frontmatter before installing:
 python tools/skill_pack.py verify     # checks manifest.json against skills/
 python tools/skill_pack.py list
 python tools/skill_pack.py install --help
+python tools/validate_skills.py skills   # checks each SKILL.md against the Agent Skills format
 ```
+
+`validate_skills.py` follows Anthropic's
+[skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices).
+It reports errors for invalid names and descriptions and for broken
+references to bundled files. It warns about bodies over 500 lines, long
+references without a table of contents, and unlinked references. Run it on
+your own skills too.
 
 `adapters/hermes-config.example.yaml` shows a Hermes agent configuration.
 The skills reference optional tools (Graphify, ScrapeGraphAI, Coder,
@@ -44,7 +52,7 @@ configuration are included.
 
 ## How they were tested
 
-- **verified-code-translation:** 25 self-tests (`python tests/test_scripts.py`;
+- **verified-code-translation:** 26 self-tests (`python tests/test_scripts.py`;
   set `VCT_DOCKER_IMAGE=<image with sh+python3>` to include the Docker
   tests). It also ran end to end: real Claude agents ported a 7-module
   Python program with an import cycle to C11 under the strict profile.

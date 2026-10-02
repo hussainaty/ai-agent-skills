@@ -74,6 +74,15 @@ def git(repo, *args, check=True):
     return sh(["git", "-C", repo] + list(args), check=check)
 
 
+def identity_args(repo):
+    """Fallback commit identity for fresh environments (CI, cloud sessions)
+    where git has none: without it every merge commit fails and was misread as
+    a merge conflict. An identity the user configured always wins."""
+    if git(repo, "config", "user.email", check=False).stdout.strip():
+        return []
+    return ["-c", "user.name=vct-orchestrator", "-c", "user.email=vct@localhost"]
+
+
 def read(path, default=""):
     try:
         with open(path, encoding="utf-8") as fh:
@@ -381,13 +390,23 @@ class Orchestrator:
         # Serialised merge into the integration branch.
         with self.merge_lock:
             commit = git(wt, "rev-parse", "HEAD").stdout.strip()
-            m = git(self.repo, "merge", "--no-ff", "-q", "-m", f"merge port of {tid}", commit, check=False)
+            m = git(self.repo, *identity_args(self.repo), "merge", "--no-ff", "-q",
+                    "-m", f"merge port of {tid}", commit, check=False)
             if m.returncode != 0:
+                conflicted = git(self.repo, "diff", "--name-only", "--diff-filter=U", check=False).stdout.split()
                 git(self.repo, "merge", "--abort", check=False)
+                if not conflicted:
+                    # Not a conflict (identity, hooks, locks...): report git's own
+                    # error instead of blaming task boundaries or the scaler.
+                    error = (m.stderr or m.stdout).strip()[-500:]
+                    task["findings"].append({"severity": "blocker", "issue": f"merge failed (not a conflict): {error}"})
+                    self.journal("merge_error", task=tid, error=error)
+                    return False
                 with self.lock:
                     self.window.append(("conflict",))
-                task["findings"].append({"severity": "blocker", "issue": "merge conflict; task boundaries overlap"})
-                self.journal("merge_conflict", task=tid)
+                task["findings"].append({"severity": "blocker",
+                                         "issue": f"merge conflict in {', '.join(conflicted[:5])}; task boundaries overlap"})
+                self.journal("merge_conflict", task=tid, files=conflicted)
                 return False
             merged = git(self.repo, "rev-parse", "HEAD").stdout.strip()
         with self.lock:
