@@ -7,7 +7,9 @@ import argparse
 import hashlib
 import json
 import re
+import os
 import shutil
+import stat
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -18,6 +20,26 @@ DEFAULT_AUTHORING_SOURCE = PACKAGE_ROOT.parent / ".agents" / "skills"
 SKILLS_ROOT = PACKAGE_ROOT / "skills"
 MANIFEST_PATH = PACKAGE_ROOT / "manifest.json"
 NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+# Version-control metadata, caches, and dependencies are never part of a skill.
+IGNORED_NAMES = {".git", ".git-upstream", ".hg", ".svn", "__pycache__", "node_modules", ".venv", ".DS_Store", "Thumbs.db"}
+IGNORED_SUFFIXES = (".pyc", ".pyo")
+COPY_IGNORE = shutil.ignore_patterns(*IGNORED_NAMES, *("*" + suffix for suffix in IGNORED_SUFFIXES))
+
+
+def is_skill_file(path: Path, directory: Path) -> bool:
+    relative = path.relative_to(directory)
+    return path.is_file() and not any(part in IGNORED_NAMES for part in relative.parts) and not path.name.endswith(IGNORED_SUFFIXES)
+
+
+def remove_tree(path: Path) -> None:
+    """Delete a directory, clearing read-only bits (Git object files on Windows)."""
+    def make_writable(function, target, _error):
+        os.chmod(target, stat.S_IWRITE)
+        function(target)
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=make_writable)
+    else:
+        shutil.rmtree(path, onerror=make_writable)
 
 
 def fail(message: str) -> None:
@@ -70,12 +92,20 @@ def frontmatter(skill_file: Path) -> dict[str, str]:
     fail(f"unterminated YAML frontmatter: {skill_file}")
 
 
+def content_bytes(path: Path) -> bytes:
+    """File bytes with CRLF normalised to LF for text files, so the same skill
+    hashes identically from a Windows (CRLF) and a Linux/macOS (LF) checkout.
+    Files containing NUL bytes are treated as binary and hashed verbatim."""
+    data = path.read_bytes()
+    return data if b"\0" in data else data.replace(b"\r\n", b"\n")
+
+
 def tree_digest(directory: Path) -> str:
     digest = hashlib.sha256()
-    for path in sorted((item for item in directory.rglob("*") if item.is_file()), key=lambda item: item.relative_to(directory).as_posix()):
+    for path in sorted((item for item in directory.rglob("*") if is_skill_file(item, directory)), key=lambda item: item.relative_to(directory).as_posix()):
         digest.update(path.relative_to(directory).as_posix().encode("utf-8"))
         digest.update(b"\0")
-        digest.update(hashlib.sha256(path.read_bytes()).digest())
+        digest.update(hashlib.sha256(content_bytes(path)).digest())
     return digest.hexdigest()
 
 
@@ -98,16 +128,19 @@ def inspect_skills(root: Path) -> list[dict[str, str]]:
 def build(source: Path) -> None:
     source = source.expanduser().resolve()
     skills = inspect_skills(source)
+    # Building from the pack's own skills/ only refreshes the manifest. Without
+    # this guard each skill would be deleted and then copied from itself.
+    in_place = source == SKILLS_ROOT.resolve()
     SKILLS_ROOT.mkdir(parents=True, exist_ok=True)
     expected = {item["name"] for item in skills}
-    for existing in skill_directories(SKILLS_ROOT):
+    for existing in [] if in_place else skill_directories(SKILLS_ROOT):
         if existing.name not in expected:
-            shutil.rmtree(existing)
-    for item in skills:
+            remove_tree(existing)
+    for item in [] if in_place else skills:
         destination = SKILLS_ROOT / item["name"]
         if destination.exists():
-            shutil.rmtree(destination)
-        shutil.copytree(source / item["name"], destination)
+            remove_tree(destination)
+        shutil.copytree(source / item["name"], destination, ignore=COPY_IGNORE)
     manifest = {
         "format": "agentskills.io",
         "version": 1,
@@ -184,8 +217,8 @@ def install(target: str, root: Path, requested: Iterable[str] | None, dry_run: b
             if tree_digest(destination) == item["tree_sha256"]:
                 print(f"current: {item['name']}")
                 continue
-            shutil.rmtree(destination)
-        shutil.copytree(source, destination)
+            remove_tree(destination)
+        shutil.copytree(source, destination, ignore=COPY_IGNORE)
         print(f"installed: {item['name']}")
 
 

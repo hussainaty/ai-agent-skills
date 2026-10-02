@@ -21,6 +21,9 @@ skill, sandbox, approval, or session mechanisms.
   shell or an approved Graphify MCP tool. Treat generated graph data as
   ephemeral unless the sandbox or checkout explicitly persists it.
 
+For each platform's skill discovery paths, size limits, and mounting details,
+read [references/platform-handoff.md](references/platform-handoff.md).
+
 Do not provision a Coder workspace, install a dependency, publish a TrueForge
 skill, connect an MCP server, or change sandbox permissions without the user's
 authorization for that platform action.

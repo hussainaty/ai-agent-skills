@@ -29,6 +29,10 @@ pair containers.
 3. An MSYS crash dump (`bash.exe.stackdump`) tripped the path guard. Known tool artifacts are now removed and journaled.
 4. On resume, branch names collided with branches from the earlier run and burned attempts. Names are now unique per attempt.
 
+Found later, on a clean Linux clone (2026-10-02):
+
+5. With no git identity configured (fresh CI or cloud containers), every merge commit failed and was misread as a merge conflict, so all units escalated. Merges now use a fallback identity only when none is configured, and a merge failure that is not a conflict reports git's own error.
+
 ## Deviation log (for the evidence package)
 
 - Lines longer than 4094 bytes: out of scope.

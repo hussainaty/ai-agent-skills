@@ -234,4 +234,4 @@ Stop and report instead of pushing on when:
 - `scripts/audit.py`: stub/unsafe/assert-side-effect/NASA P10 gates; test-inventory diff
 - `templates/implementer.md`, `templates/reviewer.md`: role prompts
 - `tests/test_scripts.py`: self-tests (`VCT_DOCKER_IMAGE=... python tests/test_scripts.py`)
-- `references/`: research evidence, deadlock taxonomy, language hazards, safety-critical profile, `worked-example.md` (real end-to-end run and its numbers)
+- `references/`: research evidence, deadlock taxonomy, language hazards, safety-critical profile, and [references/worked-example.md](references/worked-example.md) (a real end-to-end run, its numbers, and the skill bugs it found)

@@ -363,14 +363,14 @@ class OrchestratorTest(unittest.TestCase):
         subprocess.run(["git", "-C", self.repo, "worktree", "prune"], capture_output=True)
         shutil.rmtree(self.d, ignore_errors=True)
 
-    def run_orch(self, extra=(), reviewer="rev.py"):
+    def run_orch(self, extra=(), reviewer="rev.py", env=None):
         impl = f'"{PY}" "{os.path.join(self.d, "impl.py")}" "{{prompt_file}}"'
         rev = f'"{PY}" "{os.path.join(self.d, reviewer)}" "{{prompt_file}}"'
         cmd = [PY, os.path.join(SCRIPTS, "orchestrate.py"), "--repo", self.repo, "--plan", self.plan,
                "--target-root", "port", "--implementer", impl, "--reviewer", rev, "--guide", "PORTING.md",
                "--reviewers", "2", "--max-attempts", "2", "--tick", "0.2", "--run-dir",
                os.path.join(self.d, "run")] + list(extra)
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
         events = [json.loads(l) for l in open(os.path.join(self.d, "run", "journal.jsonl"))]
         return p, events
 
@@ -398,6 +398,22 @@ class OrchestratorTest(unittest.TestCase):
 
     def test_host_mode(self):
         self.check(*self.run_orch(self.MECHANICS))
+
+    def test_merges_work_without_a_git_identity(self):
+        # Regression from a clean Linux clone: with no user.email configured, the
+        # merge commit failed and was misread as a merge conflict, so every unit
+        # escalated. useConfigOnly stops git guessing an identity from the host.
+        cfg = os.path.join(self.d, "empty.gitconfig")
+        write(self.d, "empty.gitconfig", "[user]\n\tuseConfigOnly = true\n")
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME",
+                            "GIT_COMMITTER_EMAIL", "EMAIL")}
+        env.update(GIT_CONFIG_GLOBAL=cfg, GIT_CONFIG_NOSYSTEM="1")
+        p, events = self.run_orch(self.MECHANICS, env=env)
+        kinds = [e["event"] for e in events]
+        self.assertNotIn("merge_error", kinds)
+        self.assertNotIn("merge_conflict", kinds)
+        self.check(p, events)
 
     def test_resume_does_not_collide_with_old_branches(self):
         # Regression from the live E2E resume: leftover vct/<run>/<unit>-a<n> branches made

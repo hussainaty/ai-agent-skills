@@ -5,6 +5,12 @@ web search plus direct fetches of primary pages were used (fallback allowed
 by `scrapegraphai-research`). Numbers are from the primary source unless
 marked *secondary*. Each item says what it establishes and what it does not.
 
+## Contents
+1. Industrial case: Bun, Zig -> Rust
+2. Peer-reviewed and preprint research on LLM code translation
+3. Standards and programmes
+4. What the evidence does NOT support
+
 ## 1. Industrial case: Bun, Zig -> Rust (Anthropic, May 2026)
 
 Primary: [Rewriting Bun in Rust — Bun blog](https://bun.com/blog/bun-in-rust).
