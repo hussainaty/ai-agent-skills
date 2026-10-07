@@ -1,6 +1,6 @@
 ---
 name: scrapegraphai-research
-description: Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.
+description: Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Also installs, updates, and uses Agent Reach for platform content such as YouTube, GitHub, Reddit, Twitter/X, Bilibili, and RSS, including when the user pastes an Agent Reach install.md or update.md link. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.
 metadata:
   short-description: Preferred web research with ScrapeGraphAI and Exa
 ---
@@ -19,6 +19,7 @@ Do not use this skill for local workspace questions, calculations, writing based
 4. Verify important claims by opening or scraping the strongest primary or official sources. Do not rely on a search-result summary, an aggregator, or a social-media post when an authoritative page exists.
 5. Use ScrapeGraphAI **Extract** only after choosing a known source and defining a precise fact schema. Use **Crawl** only for a requester-approved site with explicit page/depth limits and a stopping condition.
 6. When ScrapeGraphAI or Exa is unavailable, or it is not the right tool, use another authorized research tool and say which route was used.
+7. For platform-native content (YouTube captions, GitHub, Reddit or Twitter/X threads, Bilibili, RSS, podcasts), use **Agent Reach** when it is installed. Treat what it returns as secondary evidence. To install or update it, follow [references/agent-reach.md](references/agent-reach.md).
 
 ## Exa browser workflow
 
@@ -31,6 +32,14 @@ Do not use this skill for local workspace questions, calculations, writing based
 - Use only public pages the requester may access and comply with site terms, robots guidance, and applicable law. Do not evade logins, paywalls, rate limits, bot defenses, or consent requirements; never enable stealth to overcome a restriction.
 - A small ScrapeGraphAI search using existing free or already-provisioned credits is within this research workflow. Stop before creating an account, generating an API key, buying credits, subscribing, submitting a payment, or transmitting sensitive data unless the requester explicitly authorizes that exact action.
 - Never print, commit, upload, or embed `SGAI_API_KEY`. Do not collect sensitive personal data, scrape private accounts, or make unsolicited mass-contact lists.
+
+## Agent Reach
+
+[Agent Reach](https://github.com/Panniantong/agent-reach) (MIT) installs and health-checks upstream CLIs (`yt-dlp`, `gh`, `opencli`, `twitter`, `rdt`, `bili`, Jina Reader) for platforms that ScrapeGraphAI and Exa cover poorly. When the user asks to install or update it, or pastes its `install.md` or `update.md` link, read [references/agent-reach.md](references/agent-reach.md) and fetch the live guide.
+
+- The default check is read-only. `--system` installs, optional channels, cookies, and paid keys each need the user's explicit go-ahead.
+- Keep everything in `~/.agent-reach/`, never in the workspace.
+- Skip its Exa API channel (`mcporter ... exa.web_search_exa`). Exa stays browser-only here.
 
 ## ScrapeGraphAI API choice
 

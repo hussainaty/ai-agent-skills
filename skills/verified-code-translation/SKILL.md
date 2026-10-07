@@ -49,6 +49,12 @@ the evidence behind every rule below.
 - Build or locate the black-box oracle. If none exists, write it first in a
   language-neutral harness and get it green against the OLD program.
   Capture the old program's outputs as golden files.
+- For a program with a web or mobile UI, the UI journeys belong in the
+  oracle too. `npx e2e init` scaffolds a suite that drives the running app
+  from outside, so it survives the language swap (see product-quality-loop's
+  `references/e2e-testing.md`). Run it green against the OLD build first. Make
+  oracle assertions locator-based (`expect(screen...)`): `agent.act` steps
+  call a model, vary between uncached runs, and are not an oracle.
 - Tag the baseline commit. Nothing below modifies the source tree.
 
 ## Phase 1 — Dependency tree and deadlock analysis

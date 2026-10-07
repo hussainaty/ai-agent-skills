@@ -1,0 +1,37 @@
+node_modules/
+dist/
+!extension/dist/
+
+# Runtime state files
+.notify-port
+.ws-port
+.listener-stop
+.listener-pid
+.owner-session
+
+# Environment / secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal dev files
+.claude/
+AREAS/
+CLAUDE.md
+AUDIT.md
+TODO.md
+
+# Tool artifacts
+.playwright-mcp/
+colab-demo.mp4
+# Demo source videos (GIFs in docs/ are what ships)
+collab-*.mp4

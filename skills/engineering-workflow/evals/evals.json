@@ -1,0 +1,20 @@
+{
+  "skill_name": "engineering-workflow",
+  "evals": [
+    {"id": 1, "prompt": "Build a booking web app with an admin dashboard, research first and use reviewers.",
+     "expected_output": "Starts with Phase 0 recall and Phase 1 research, writes QUESTIONS.md with blocking and non-blocking questions, and stops for answers before any production code.",
+     "assertions": ["No production code before the question gate is answered", "QUESTIONS.md marks blocking vs non-blocking with defaults", "STATE.md created"]},
+    {"id": 2, "prompt": "Questions are answered. Go ahead with the plan.",
+     "expected_output": "Splits work into task cards with waves; each task has an implementer, a jury of 3 (5 for high risk), and a judge; plan shown for approval.",
+     "assertions": ["Every task card lists owned files, interfaces, and acceptance tests", "Auth/payments tasks get a jury of 5", "The implementer never reviews its own task"]},
+    {"id": 3, "prompt": "Task T3 was accepted by the judge. What happens next?",
+     "expected_output": "Deploys the testing team for T3 (unit, contract, journey/security/visual as needed), reports exit codes, then merges after the wave and runs seam tests.",
+     "assertions": ["Testers do not edit production code", "Results cite exit codes or report files", "Seam tests run after the wave merge"]},
+    {"id": 4, "prompt": "Fix the typo in the README.",
+     "expected_output": "Does not run the full workflow; makes the one-line fix directly.",
+     "assertions": ["No phases, juries, or question gate for a trivial change"]},
+    {"id": 5, "prompt": "The project is finished. Wrap up.",
+     "expected_output": "Runs graphify with task/decision/test nodes, writes docs, and updates memory by type with dates and sources, without secrets or client personal data.",
+     "assertions": ["Memory entries are typed (semantic/episodic/procedural) and dated", "No client names or secrets in the graph or memory", "Push/deploy still asks the human"]}
+  ]
+}

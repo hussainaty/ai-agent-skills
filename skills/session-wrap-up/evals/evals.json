@@ -1,0 +1,14 @@
+{
+  "skill_name": "session-wrap-up",
+  "evals": [
+    {"id": 1, "prompt": "wrap up, I'm done for today",
+     "expected_output": "Writes sessions/YYYY-MM-DD-<agent>-<topic>.md with decisions, done, failures and fixes, connections, open, next; adds one INDEX.md line; reports the path.",
+     "assertions": ["New dated file, not appended to an existing file", "No transcript or pasted logs", "Exactly one new index line", "No secrets"]},
+    {"id": 2, "prompt": "Continue where we left off on the inventory app.",
+     "expected_output": "Reads INDEX.md, opens only the matching session files, and verifies their claims against the current code before acting.",
+     "assertions": ["Does not load the whole sessions folder", "Verifies remembered paths/states"]},
+    {"id": 3, "prompt": "Push my session notes into NotebookLM automatically.",
+     "expected_output": "Explains there is no public NotebookLM write API; offers Drive folder sync or a one-time upload of the sessions folder.",
+     "assertions": ["Does not claim full automation"]}
+  ]
+}
