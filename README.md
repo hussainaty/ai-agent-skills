@@ -55,7 +55,7 @@ The full list of collected skills, and where each one fits, is in
 | [`global-memory-recovery`](skills/global-memory-recovery) | Keeps a device-local, account-independent map of projects and task IDs, so work can continue after an account switch or lost chat. Never stores transcripts or secrets. |
 | [`verified-code-translation`](skills/verified-code-translation) | Ports code between languages, especially high-level to C, Rust, or assembly. It orders the work by the dependency graph, untangles cycles, flags lock-order deadlock risks, and runs isolated implementer/adversarial-reviewer pairs in Docker containers that scale up and down. It proves the new "engine" behaves like the old one with black-box differential fuzzing and produces an evidence package for safety-critical review (DO-178C, IEC 61508, IEC 60880, NASA). |
 | [`scrapegraphai-research`](skills/scrapegraphai-research) | Web research with ScrapeGraphAI and Exa, Agent Reach install/update for platform content (YouTube, GitHub, Reddit, X, RSS), plus a scientific mode that scales effort to the question, vets papers (venue, artifacts, scale), and verifies every citation. |
-| [`blender-stylized-2d-animation`](skills/blender-stylized-2d-animation) | Builds stylized 2D-look (cel/toon) Blender scenes through the Blender Lab MCP: flat colour bands, inverted-hull outlines, boil animation on twos, procedural fire, Geometry Nodes bubbles. |
+| [`blender-stylized-2d-animation`](skills/blender-stylized-2d-animation) | Builds stylized 2D-look (cel/toon) Blender scenes through the Blender Lab MCP: flat colour bands, inverted-hull outlines, boil animation on twos, procedural fire, Geometry Nodes bubbles. **Animates existing character art without losing detail:** cuts the original drawing into jointed parts (never redraws it), rebuilds hidden joint ends, enforces joint limits, and walks with foot lock, with review gates at every step (0 unassigned pixels, rest pose ≥ 35 dB versus the original). |
 
 ## Install
 
@@ -101,7 +101,10 @@ configuration are included.
   with 0 divergences. See
   [`references/worked-example.md`](skills/verified-code-translation/references/worked-example.md),
   including the bugs that run found in the skill itself.
-- **blender-stylized-2d-animation:** built and rendered headless on Blender 5.2.1 LTS (EEVEE).
+- **blender-stylized-2d-animation:** built and rendered headless on Blender 5.2.1 LTS (EEVEE). The cut-out workflow was proven on a real
+  character that an earlier AI attempt had redrawn and lost detail on: the rest-pose reassembly matched the original at 37.4 dB with every
+  freckle and boot line intact, the standing foot stayed within ±2 px through the walk, and impossible poses were clamped. The client artwork
+  is not published. `tests/test_cutout_parts.py` covers the cutter on a synthetic figure.
 - **scrapegraphai-research:** used for the research behind `verified-code-translation`.
   Sources are in [`references/research.md`](skills/verified-code-translation/references/research.md).
 

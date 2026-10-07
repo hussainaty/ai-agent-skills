@@ -9,8 +9,8 @@
     },
     {
       "name": "blender-stylized-2d-animation",
-      "description": "Build and animate stylized \"2D-look\" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender \u2014 flat colour bands, bold inverted-hull outlines, hand-drawn \"boil\" animated on twos, procedural fire, Geometry Nodes bubbles/particles, compositor glow. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or to extend the fried-egg-in-a-pan example. Not for photoreal rendering.",
-      "tree_sha256": "71934040a100299d5f7a22c595665381d5c82b86025da710a642e731b44a7862"
+      "description": "Build and animate stylized \"2D-look\" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender, and animate EXISTING 2D character art without losing detail by cutting the original drawing into jointed parts (cut-out rig) instead of redrawing it. Covers flat colour bands, inverted-hull outlines, boil on twos, procedural fire, Geometry Nodes bubbles, joint pivots and limits, walk cycles with foot lock, and per-part review gates. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or wants an existing character posed, animated, or turned into a sprite set. Not for photoreal rendering.",
+      "tree_sha256": "bd69a30af8f24ae5139fd5d8b0fffa8bae7021bf9cf537d3148676b48c5b715d"
     },
     {
       "name": "client-profiling",
