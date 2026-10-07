@@ -33,7 +33,7 @@ Choose evidence by risk, not by tool count. Do not automatically add tests for l
 | Layout, interaction, animation | Real browser inspection at affected widths and states; screenshots for visual comparison |
 | Logic or persistence | Focused unit/integration tests for outcomes and relevant failure modes |
 | Authorization | Allowed and denied API requests, including cross-tenant access when relevant |
-| Cross-layer workflow | A representative end-to-end journey through the actual UI and backend |
+| Cross-layer workflow | A representative end-to-end journey through the actual UI and backend. With no existing suite, set one up with `npx e2e init`; read [e2e-testing.md](references/e2e-testing.md) first |
 | Schema, seed, deployment, or email | Read [release-verification.md](references/release-verification.md) and use its relevant sections |
 
 - Run applicable repository checks, including types/build for changes that can affect them. Confirm completion using the exit status and relevant result or an authoritative machine-readable report. A background start or truncated log without another conclusive result is insufficient.

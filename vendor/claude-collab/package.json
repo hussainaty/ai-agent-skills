@@ -1,0 +1,46 @@
+{
+  "name": "claude-collab",
+  "version": "0.8.0",
+  "type": "module",
+  "description": "Pair with Claude Code inside the live page — a shared browser where you point, chat, and design together",
+  "license": "Apache-2.0",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "mcp",
+    "collaboration",
+    "browser",
+    "pair-design",
+    "ui",
+    "ux",
+    "playwright",
+    "chrome-extension"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "setup": "node scripts/setup.cjs",
+    "build:ext": "node extension/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:host-compat": "node test/host-compat.mjs",
+    "footprint": "node test/footprint.mjs"
+  },
+  "dependencies": {
+    "@andresaya/edge-tts": "^1.8.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@types/ws": "^8.18.1",
+    "playwright": "^1.52.0",
+    "ws": "^8.20.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  },
+  "allowScripts": {
+    "esbuild@0.27.3": true
+  }
+}

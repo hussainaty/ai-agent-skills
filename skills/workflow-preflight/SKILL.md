@@ -47,11 +47,21 @@ loading.
 - Repository architecture, file relationships, or codebase questions:
   `graphify`.
 - Current public facts or structured source research: `scrapegraphai-research`.
+- Platform content (YouTube, GitHub, Reddit, Twitter/X, Bilibili, RSS), or
+  installing or updating Agent Reach: `scrapegraphai-research` (see
+  scrapegraphai-research's `references/agent-reach.md`).
 - User-authorized feature work, fixes, or release preparation:
   `product-quality-loop`.
 - Coder workspace or TrueForge handoff: `remote-agent-graphify`.
 - Cross-agent work that needs several of the routes above: `agent-workflow-pipeline`.
+- Building or substantially extending a product end to end (research, questions,
+  jury-reviewed tasks, testing, integration, graph, memory): `engineering-workflow`.
+- Profiling or prioritizing clients from a CRM export: `client-profiling`.
 - Browser interaction or web-app testing: `agent-browser`.
+- A repeatable end-to-end test suite for a web or mobile app: `npx e2e init`
+  through `product-quality-loop` (see product-quality-loop's `references/e2e-testing.md`). It installs
+  packages, a skill, and an MCP entry, so treat it as an install that needs the
+  user's go-ahead unless they asked for it.
 - Frontend design or UX work: `impeccable`.
 - Security assessment: `application-security-testing`.
 

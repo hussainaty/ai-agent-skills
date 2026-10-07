@@ -1,0 +1,5 @@
+# Cookie profiles contain live session cookies — never commit
+cookie-profiles/
+
+node_modules/
+*.log

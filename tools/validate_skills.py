@@ -35,6 +35,7 @@ FIRST_SECOND_PERSON_RE = re.compile(r"^\s*(I |I'm |I can|You can|You should|We |
 BACKSLASH_PATH_RE = re.compile(r"\b(?:scripts|references|templates|assets)\\[\w.\\-]+")
 TOC_RE = re.compile(r"^#{1,3}\s*(contents|table of contents|toc)\b", re.I | re.M)
 BUNDLED_RE = re.compile(r"`((?:scripts|references|templates|assets|tests|examples)/[\w./-]+)`")
+CROSS_SKILL_RE = re.compile(r"`?\b([a-z0-9][a-z0-9-]*)`?'s\s*`?$")
 
 
 def parse_frontmatter(text):
@@ -125,20 +126,25 @@ def check_skill(path, strict_name=False):
         warnings.append(f"body is {lines} lines (>500); move detail into references/")
     base = os.path.dirname(path)
     in_fence = False
+    prev = ""
     for i, line in enumerate(body.splitlines(), 1):
         if line.lstrip().startswith("```"):
             in_fence = not in_fence
             continue
         if in_fence:
             continue
-        targets = [m.group(1) for m in LINK_RE.finditer(line)]
-        targets += [m.group(1) for m in BUNDLED_RE.finditer(line)]
-        for t in targets:
+        context, prev = prev, line
+        matches = list(LINK_RE.finditer(line)) + list(BUNDLED_RE.finditer(line))
+        for m in matches:
+            t = m.group(1)
             if re.match(r"^[a-z]+:", t) or t.startswith("/") or t.startswith("~") or "<" in t or "*" in t:
                 continue
-            target = os.path.normpath(os.path.join(base, t.rstrip("/")))
+            # "other-skill's `references/x.md`" points into a sibling skill.
+            owner = CROSS_SKILL_RE.search((context.rstrip() + " " + line[:m.start()]).rstrip(" ("))
+            root = os.path.join(os.path.dirname(base), owner.group(1)) if owner else base
+            target = os.path.normpath(os.path.join(root, t.rstrip("/")))
             if not os.path.exists(target):
-                errors.append(f"broken reference {t!r}")
+                errors.append(f"broken reference {t!r}" + (f" in skill {owner.group(1)!r}" if owner else ""))
     if BACKSLASH_PATH_RE.search(body):
         warnings.append("backslash path to a bundled file; use forward slashes")
     linked = {os.path.normpath(os.path.join(base, m.group(1))) for m in LINK_RE.finditer(body)}

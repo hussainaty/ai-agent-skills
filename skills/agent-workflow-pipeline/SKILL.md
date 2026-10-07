@@ -22,6 +22,10 @@ does not replace the main coding model with a classifier or a tiny local model.
    the selected workspace and complete **Product Quality Loop** verification.
    Match the checks to risk: browser evidence for UI behavior, focused tests for
    logic, and representative end-to-end journeys for cross-layer workflows.
+   When a web or mobile app has no end-to-end suite, scaffold one with
+   `npx e2e init` (`--yes` when there is no terminal), following
+   product-quality-loop's `references/e2e-testing.md`: telemetry off, a model
+   chosen by the user, and never against production data.
 4. Use **Jev** only when the decision is a known, finite set of labels. Examples
    include routing a request as `research`, `graph-query`, `implementation`, or
    `needs-user-input`, and assigning a pre-defined risk tier. Include a

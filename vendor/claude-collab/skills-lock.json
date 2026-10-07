@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "piv-implement": {
+      "source": "coleam00/skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/piv-implement/SKILL.md",
+      "computedHash": "12d184b8644bc632f23aac45ff1fb021468587fb72fe2d7851a03850a2a0625b"
+    },
+    "piv-plan-implementation": {
+      "source": "coleam00/skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/piv-plan-implementation/SKILL.md",
+      "computedHash": "dd40fdc946921f1b294a45a576fa3cec237dde9977f3449191c929f294e41f65"
+    },
+    "piv-validate": {
+      "source": "coleam00/skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/piv-validate/SKILL.md",
+      "computedHash": "b4c4e86832ffc287f2446e0bb45fe4a8e1e559e42020b8c708033ca886f370a3"
+    }
+  }
+}

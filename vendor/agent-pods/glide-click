@@ -1,0 +1,47 @@
+#!/bin/sh
+# glide-click X Y [STEPS] [move]
+#
+# Ease the REAL X cursor from its current position to X,Y (device pixels on
+# the Xvfb display), then left-click. With a 4th arg "move", glide only and
+# skip the click (useful for triggering :hover).
+#
+# Why this exists: CDP Input.dispatchMouseEvent injects synthetic events that
+# skip parts of the native input path — some :hover states, CSS transitions,
+# and HTML5 drag never fire. xdotool moves the actual X pointer, so Chromium
+# sees genuine OS input. And the cursor visibly travels across the screen, so
+# anyone watching the noVNC viewer sees the agent "use" the page like a human.
+set -e
+export DISPLAY=:99
+
+TX="$1"; TY="$2"; STEPS="${3:-60}"; MODE="$4"
+if [ -z "$TX" ] || [ -z "$TY" ]; then
+  echo "usage: glide-click X Y [steps] [move]" >&2
+  exit 1
+fi
+
+# Current pointer position -> X, Y, SCREEN, WINDOW
+eval "$(xdotool getmouselocation --shell)"
+SX="$X"; SY="$Y"
+
+# Straight-line glide. --sync makes each hop land before the next, and the
+# per-step sleep spreads the motion over ~0.9s so it reads as smooth travel
+# in the noVNC viewer (which samples frames slower than xdotool can move).
+i=1
+while [ "$i" -le "$STEPS" ]; do
+  # easeInOutQuad on t = i/STEPS for natural accel/decel (integer math, *1000)
+  T=$(( i * 1000 / STEPS ))
+  if [ "$T" -lt 500 ]; then
+    E=$(( 2 * T * T / 1000 ))
+  else
+    U=$(( 1000 - T ))
+    E=$(( 1000 - 2 * U * U / 1000 ))
+  fi
+  CX=$(( SX + (TX - SX) * E / 1000 ))
+  CY=$(( SY + (TY - SY) * E / 1000 ))
+  xdotool mousemove --sync "$CX" "$CY"
+  sleep 0.015
+  i=$(( i + 1 ))
+done
+
+xdotool mousemove --sync "$TX" "$TY"
+[ "$MODE" = "move" ] || xdotool click 1
