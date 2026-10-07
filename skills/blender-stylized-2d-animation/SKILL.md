@@ -1,6 +1,6 @@
 ---
 name: blender-stylized-2d-animation
-description: Build and animate stylized "2D-look" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender — flat colour bands, bold inverted-hull outlines, hand-drawn "boil" animated on twos, procedural fire, Geometry Nodes bubbles/particles, compositor glow. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or to extend the fried-egg-in-a-pan example. Not for photoreal rendering.
+description: Build and animate stylized "2D-look" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender, and animate EXISTING 2D character art without losing detail by cutting the original drawing into jointed parts (cut-out rig) instead of redrawing it. Covers flat colour bands, inverted-hull outlines, boil on twos, procedural fire, Geometry Nodes bubbles, joint pivots and limits, walk cycles with foot lock, and per-part review gates. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or wants an existing character posed, animated, or turned into a sprite set. Not for photoreal rendering.
 metadata:
   short-description: Toon/2D-look Blender scenes and boil animation via MCP
 ---
@@ -12,6 +12,39 @@ Technique studied from Zha Art's short "Eggs in Blender (stylized)"
 "How I Made a 2D Looking Eggs Animation in Blender! (Tutorial)". The
 script here is an original, fully procedural implementation of that recipe,
 tested on Blender 5.2.1 LTS with EEVEE.
+
+## First decision: does the character already exist as art?
+
+If the user supplies a drawing of the character, **do not rebuild or
+regenerate it**. Cut the original into parts and animate the parts. Every
+pixel then comes from the artist, so freckles, line weights and creases
+survive. A previous run redrew a character procedurally and lost all of
+them; its knees bent the wrong way, and its feet slid. Read
+[references/character-cutout.md](references/character-cutout.md) first. The
+work is divided, seen, then added up:
+
+1. **Detail inventory:** list what must survive (freckles, lashes,
+   highlights, seams, finger segments).
+2. **Divide:** `python scripts/cutout_parts.py spec.json OUT/`, with one
+   polygon, pivot, parent and z per part. The ball goes to the child part,
+   and the pivot is at the ball centre. Shoulder-type joints get a fixed
+   cap. Hidden ends are rebuilt with `extend`, `sweep` or `complete`.
+   Gate: 0 unassigned pixels.
+3. **See:** a parts sheet, 4× grid zooms at each joint, then a rest-pose
+   render with `scripts/cutout_rig.py` diffed against the original (PSNR ≥
+   35 dB, every inventory item intact at zoom), then a joint stress test at
+   the limits.
+4. **Add up:** poses and animation as joint angles with per-joint limits
+   (out-of-range poses are clamped and reported). Walks use contact, down,
+   passing, up, with foot lock. Compare against any poses the artist drew.
+5. Views or hand shapes the artist never drew are new drawings: ask for
+   them, and never invent them during animation.
+
+```
+blender -b --factory-startup --python scripts/cutout_rig.py -- OUT/ anim.json RENDERS/
+```
+
+`tests/test_cutout_parts.py` covers the cutter (no Blender needed).
 
 ## Connect
 
@@ -96,6 +129,9 @@ tested on Blender 5.2.1 LTS with EEVEE.
   colours, orthographic top-down camera.
 
 ## Check before delivering
+
+- Character work: every gate in `references/character-cutout.md` passed, with
+  its numbers reported (unassigned pixels, rest-pose PSNR, foot drift, clamped poses).
 
 - Render at least two frames a few apart: the rims and flames must differ
   (proving the boil and fire animate), while the faces stay on the yolks.
