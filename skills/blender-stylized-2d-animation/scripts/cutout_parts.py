@@ -3,13 +3,14 @@
 
     python cutout_parts.py spec.json OUT_DIR
 
-Every output pixel is copied from the original art, so freckles, line weight,
-highlights and small details survive by construction. The spec lists the
-parts in priority order (first polygon that contains a pixel wins):
+Every visible output pixel is copied from the original art, so freckles, line
+weight, highlights and small details survive by construction. The spec lists
+the parts in priority order (the first polygon that contains a pixel wins):
 
 {
   "image": "front.png",
-  "background": {"seeds": "border", "tolerance": 14},
+  "background": {"tolerance": 14},
+  "defringe": true,
   "parts": [
     {"name": "antenna_l", "poly": [[x, y], ...], "pivot": [x, y], "parent": "head", "z": 1},
     {"name": "thigh_l", "poly": [...], "pivot": [...], "parent": "torso", "z": 2,
@@ -17,26 +18,63 @@ parts in priority order (first polygon that contains a pixel wins):
   ]
 }
 
-"extend" rebuilds a part's hidden end (e.g. a thigh rod under the torso) by
-repeating one clean row, so the joint never shows a gap when it rotates.
-"sweep": {"from": [x, y], "to": [x, y], "half_width": n} does the same for a
-rod at any angle: a clean cross-section at "from" slides along the axis to
-"to" (e.g. the upper-arm rod under a fixed shoulder cap).
-"complete": {"polys": [...], "edges": [[...]], "line_width": 3} draws the
-part's HIDDEN area (covered by a part in front, e.g. the torso under the
-shoulder caps) like an artist would: "polys" is the part's true silhouette
-there, filled by diffusing body colour (outline pixels excluded, so nothing
-smears), and "edges" is the measured contour, inked in the part's own outline
-colour. Only hidden pixels are touched, so the rest pose stays identical.
-It only fills pixels that a part with a higher z covers in the original,
-so the rest pose is pixel-identical and the rebuilt end only shows when the
-joint moves.
+Repair operations (all optional, applied in this order). They only write
+pixels that are missing or hidden behind a part with a higher z at rest, so
+the rest pose stays the same and the repairs only show when a joint moves.
 
-Outputs: <name>.png (full-canvas RGBA, original pixels), rig.json (pivots,
-parents, z, canvas size) and review.png (each part tinted, unassigned
-foreground in magenta). A non-zero "unassigned" count fails the review gate.
+"extend": {"from_row", "to_row", "x": [x0, x1]} (or a list of them) rebuilds
+a vertical rod's hidden end (a thigh under the torso, or under the knee
+ball) by repeating one clean row.
+
+"sweep": {"from": [x, y], "to": [x, y], "half_width": n} slides a clean
+cross-section along an axis at any angle (uniform rods only).
+
+"rod": {"axis": [[x, y], [x, y]], "segments": [{"t0": a, "ext0": [lo, hi],
+"tc": b, "extc": [lo, hi], ...}]} rebuilds a tapered rod between t0 and tc
+(distance along the axis) from its clean cross-section at tc, scaled to the
+outline extents (lo/hi = signed distance from the axis). Sampling is
+bilinear, so edges stay smooth. Options per segment:
+  "edge": ["lo"|"hi", n]  also re-ink n px on the side whose outline a cut
+                          destroyed (dark pixels only, on visible pixels)
+  "round_start": true     close the t0 end with a rounded, inked tip
+  "replace": true         rebuild every pixel of the stretch (use only where
+                          a part in front covers it at rest; confirm with
+                          the rest-pose diff)
+  "replace_above_luma": n replace only pixels at least this bright (a
+                          neighbour's white highlight caught inside the cut)
+  "src_t", "src_ext"      copy from a clean cross-section elsewhere on the
+                          rod when the one at tc is damaged too
+  "trim_only": true       only remove leftovers outside the outline
+Use it when a cut ran along a rod's edge, or its end is hidden under a cap.
+
+"complete": {"polys": [...], "edges": [[...]], "line_width": 3} draws the
+part's hidden area (the torso under the arms, the top of a ball under a rod
+tip) the way an artist would: "polys" is the part's true silhouette there,
+filled by diffusing body colour (outline pixels excluded, so nothing
+smears); "edges" is the measured contour, inked in the part's own outline
+colour. Fill and ink are anti-aliased (4x supersampled), and the fill is
+smoothed. "radial": [{"center": [x, y], "r": n}] completes a ball joint
+instead: hidden pixels take the ball's own colour-by-radius profile, which
+also continues its rim outline.
+
+"alt": {"above_deg": n, "ops": {...}} makes a second drawing of the part
+(<name>__alt.png) with the given repair ops replacing the part's own. The
+rig shows it instead of the first drawing whenever the joint is rotated more
+than n degrees from rest. This is the cut-out "drawing swap": use it when no
+single image is right both at rest and when raised (for example, a rod whose
+top carries part of a shoulder drawing).
+
+"defringe" (default true) removes the page-colour matte from outline rim
+pixels: a rim pixel that was blended with the background becomes the outline
+colour with partial alpha. Without it, a part moved over another part shows a
+pale fringe.
+
+Outputs: <name>.png (full-canvas RGBA), rig.json (pivots, parents, z, canvas
+size) and review.png (each part tinted, unassigned foreground in magenta). A
+non-zero "unassigned" count fails the review gate (exit code 1).
 """
 import json
+import math
 import sys
 from collections import deque
 from pathlib import Path
@@ -46,6 +84,11 @@ from PIL import Image, ImageDraw
 TINTS = [(255, 99, 71), (60, 179, 113), (65, 105, 225), (238, 130, 238), (255, 215, 0), (0, 206, 209),
          (255, 140, 0), (154, 205, 50), (199, 21, 133), (70, 130, 180), (210, 105, 30), (123, 104, 238),
          (46, 139, 87), (220, 20, 60), (100, 149, 237), (218, 165, 32)]
+SS = 4  # supersampling for anti-aliased fills and ink
+
+
+def luma(c) -> int:
+    return (c[0] * 299 + c[1] * 587 + c[2] * 114) // 1000
 
 
 def background_mask(img: Image.Image, tolerance: int) -> list[list[bool]]:
@@ -72,6 +115,30 @@ def background_mask(img: Image.Image, tolerance: int) -> list[list[bool]]:
     return bg
 
 
+def bilinear(px, w, h, x, y):
+    """Premultiplied bilinear sample of an RGBA pixel access object."""
+    x0, y0 = math.floor(x), math.floor(y)
+    fx, fy = x - x0, y - y0
+    acc = [0.0, 0.0, 0.0, 0.0]
+    for xi, yi, wt in ((x0, y0, (1 - fx) * (1 - fy)), (x0 + 1, y0, fx * (1 - fy)),
+                       (x0, y0 + 1, (1 - fx) * fy), (x0 + 1, y0 + 1, fx * fy)):
+        if 0 <= xi < w and 0 <= yi < h and wt > 0:
+            r, g, b, a = px[xi, yi]
+            af = a / 255 * wt
+            acc[0] += r * af; acc[1] += g * af; acc[2] += b * af; acc[3] += af
+    if acc[3] < 1e-4:
+        return (0, 0, 0, 0)
+    return (round(acc[0] / acc[3]), round(acc[1] / acc[3]), round(acc[2] / acc[3]), round(acc[3] * 255))
+
+
+def coverage(size, draw_fn) -> Image.Image:
+    """Draw at SS x and box-filter down: an anti-aliased 0..255 coverage mask."""
+    w, h = size
+    big = Image.new("L", (w * SS, h * SS), 0)
+    draw_fn(ImageDraw.Draw(big), SS)
+    return big.resize((w, h), Image.BOX)
+
+
 def main(spec_path: str, out_dir: str) -> int:
     spec_file = Path(spec_path)
     spec = json.loads(spec_file.read_text(encoding="utf-8"))
@@ -80,10 +147,12 @@ def main(spec_path: str, out_dir: str) -> int:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     bg = background_mask(img, spec.get("background", {}).get("tolerance", 14))
+    bg_rgb = img.getpixel((0, 0))
+    parts = spec["parts"]
 
     owner = [[-1] * w for _ in range(h)]
     masks = []
-    for part in spec["parts"]:
+    for part in parts:
         m = Image.new("L", (w, h), 0)
         ImageDraw.Draw(m).polygon([tuple(p) for p in part["poly"]], fill=255)
         masks.append(m.load())
@@ -101,96 +170,218 @@ def main(spec_path: str, out_dir: str) -> int:
     rv = review.load()
     unassigned = 0
     rig = {"canvas": [w, h], "parts": []}
-    for i, part in enumerate(spec["parts"]):
-        layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        lp = layer.load()
-        count = 0
-        for y in range(h):
-            for x in range(w):
-                if owner[y][x] == i:
-                    lp[x, y] = src[x, y] + (255,)
-                    count += 1
-        ext = part.get("extend")
-        if ext:  # rebuild the hidden end from one clean row
-            x0, x1 = ext["x"]
-            step = -1 if ext["to_row"] < ext["from_row"] else 1
+
+    def z_of(i):
+        return parts[i].get("z", 0)
+
+    for i, part in enumerate(parts):
+        base_part = part
+        variants = [(part["name"], part)]
+        if part.get("alt"):   # a second drawing of the same part, swapped in by the rig above an angle
+            variants.append((part["name"] + "__alt", {**part, **part["alt"]["ops"]}))
+        for save_name, part in variants:
             my_z = part.get("z", 0)
-            for y in range(ext["from_row"] + step, ext["to_row"] + step, step):
-                for x in range(x0, x1 + 1):
-                    o = owner[y][x]
-                    covered = o >= 0 and spec["parts"][o].get("z", 0) > my_z
-                    # only rebuild where a part in front hides it at rest, so the rest pose is unchanged
-                    if lp[x, y][3] == 0 and lp[x, ext["from_row"]][3] == 255 and covered:
-                        lp[x, y] = lp[x, ext["from_row"]]
-        sweep = part.get("sweep")
-        if sweep:  # rebuild a hidden rod end by sliding a clean cross-section along the rod axis
-            import math
-            (fx, fy), (tx, ty), hw = sweep["from"], sweep["to"], sweep["half_width"]
-            L = math.hypot(tx - fx, ty - fy)
-            dx_, dy_ = (tx - fx) / L, (ty - fy) / L
-            nx_, ny_ = -dy_, dx_
-            my_z = part.get("z", 0)
-            t = 0.0
-            while t <= L:
-                s_ = -hw
-                while s_ <= hw:
-                    sx, sy = round(fx + nx_ * s_), round(fy + ny_ * s_)
-                    qx, qy = round(fx + dx_ * t + nx_ * s_), round(fy + dy_ * t + ny_ * s_)
-                    if 0 <= qx < w and 0 <= qy < h and lp[qx, qy][3] == 0 and lp[sx, sy][3] == 255:
-                        o = owner[qy][qx]
-                        if o >= 0 and spec["parts"][o].get("z", 0) > my_z:
-                            lp[qx, qy] = lp[sx, sy]
-                    s_ += 0.5
-                t += 0.5
-        comp = part.get("complete")
-        if comp:  # draw the hidden part of this piece the way an artist would: body colour + inked contour
-            sil = Image.new("L", (w, h), 0)
-            for poly in comp["polys"]:
-                ImageDraw.Draw(sil).polygon([tuple(p) for p in poly], fill=255)
-            sp = sil.load()
-            def hidden(x, y):
-                o = owner[y][x]
-                return o >= 0 and spec["parts"][o].get("z", 0) > part.get("z", 0)
-            luma = lambda c: (c[0] * 299 + c[1] * 587 + c[2] * 114) // 1000
-            todo = {(x, y) for y in range(h) for x in range(w) if sp[x, y] and lp[x, y][3] == 0 and hidden(x, y)}
-            while todo:  # diffuse body colour only (ignore outline pixels so nothing smears)
-                ready = []
-                for x, y in todo:
-                    nb = [lp[nx, ny] for nx, ny in ((x+1, y), (x-1, y), (x, y+1), (x, y-1))
-                          if 0 <= nx < w and 0 <= ny < h and lp[nx, ny][3] == 255 and luma(lp[nx, ny]) >= comp.get("min_luma", 90)]
-                    if nb:
-                        ready.append((x, y, tuple(sum(c[i] for c in nb) // len(nb) for i in range(3)) + (255,)))
-                if not ready:
-                    break
-                for x, y, c in ready:
-                    lp[x, y] = c
-                    todo.discard((x, y))
-            dark = sorted((lp[x, y][:3] for y in range(h) for x in range(w)
-                           if lp[x, y][3] == 255 and luma(lp[x, y]) < 50), key=luma)
-            ink = dark[len(dark) // 2] + (255,) if dark else (12, 40, 58, 255)
-            stroke = Image.new("L", (w, h), 0)
-            for edge in comp.get("edges", []):
-                ImageDraw.Draw(stroke).line([tuple(p) for p in edge], fill=255, width=comp.get("line_width", 3), joint="curve")
-            st = stroke.load()
+            layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            lp = layer.load()
+            count = 0
             for y in range(h):
                 for x in range(w):
-                    if st[x, y] and hidden(x, y):
-                        lp[x, y] = ink
-        layer.save(out / f"{part['name']}.png")
+                    if owner[y][x] == i:
+                        lp[x, y] = src[x, y] + (255,)
+                        count += 1
+
+            def hidden(x, y):
+                o = owner[y][x]
+                return o >= 0 and z_of(o) > my_z
+
+            dark = sorted((lp[x, y][:3] for y in range(h) for x in range(w)
+                           if lp[x, y][3] == 255 and luma(lp[x, y]) < 50), key=luma)
+            ink = dark[len(dark) // 2] if dark else (12, 40, 58)
+
+            # --- defringe: outline rim pixels blended with the page become ink with partial alpha
+            if spec.get("defringe", True):
+                lb, li = luma(bg_rgb), luma(ink)
+                rim = []
+                for y in range(h):
+                    for x in range(w):
+                        if owner[y][x] != i:
+                            continue
+                        nb = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+                        if not any(0 <= a < w and 0 <= b < h and bg[b][a] for a, b in nb):
+                            continue
+                        near_ink = any(0 <= a < w and 0 <= b < h and owner[b][a] == i and luma(src[a, b]) < 90
+                                       for a in range(x - 2, x + 3) for b in range(y - 2, y + 3))
+                        lc = luma(src[x, y])
+                        if near_ink and lc > li + 25:
+                            rim.append((x, y, max(0.0, min(1.0, (lb - lc) / max(lb - li, 1)))))
+                for x, y, a in rim:
+                    lp[x, y] = tuple(ink) + (round(a * 255),)
+
+            # --- extend: repeat one clean row into hidden pixels (vertical rods)
+            exts = part.get("extend") or []
+            for ext in exts if isinstance(exts, list) else [exts]:
+                x0, x1 = ext["x"]
+                step = -1 if ext["to_row"] < ext["from_row"] else 1
+                for y in range(ext["from_row"] + step, ext["to_row"] + step, step):
+                    for x in range(x0, x1 + 1):
+                        if lp[x, y][3] == 0 and lp[x, ext["from_row"]][3] > 0 and hidden(x, y):
+                            lp[x, y] = lp[x, ext["from_row"]]
+
+            # --- sweep: slide a clean cross-section along an axis (uniform rods)
+            sweep = part.get("sweep")
+            if sweep:
+                (fx, fy), (tx, ty), hw = sweep["from"], sweep["to"], sweep["half_width"]
+                L = math.hypot(tx - fx, ty - fy)
+                dx_, dy_ = (tx - fx) / L, (ty - fy) / L
+                nx_, ny_ = -dy_, dx_
+                t = 0.0
+                while t <= L:
+                    s_ = -hw
+                    while s_ <= hw:
+                        sx, sy = round(fx + nx_ * s_), round(fy + ny_ * s_)
+                        qx, qy = round(fx + dx_ * t + nx_ * s_), round(fy + dy_ * t + ny_ * s_)
+                        if 0 <= qx < w and 0 <= qy < h and lp[qx, qy][3] == 0 and lp[sx, sy][3] == 255 and hidden(qx, qy):
+                            lp[qx, qy] = lp[sx, sy]
+                        s_ += 0.5
+                    t += 0.5
+
+            # --- rod: rebuild a tapered rod from a clean cross-section (bilinear, anti-aliased)
+            rod = part.get("rod")
+            if rod:
+                (ax, ay), (bx, by) = rod["axis"]
+                L = math.hypot(bx - ax, by - ay)
+                dx_, dy_ = (bx - ax) / L, (by - ay) / L
+                nx_, ny_ = -dy_, dx_
+                rsrc = layer.copy().load()
+                for seg in rod["segments"]:
+                    t0, tc = seg["t0"], seg["tc"]
+                    (lo0, hi0), (loc, hic) = seg["ext0"], seg["extc"]
+                    r0 = (hi0 - lo0) / 2
+                    side, band = seg.get("edge", [None, 0])
+
+                    def ext(t):
+                        k = (t - t0) / (tc - t0)
+                        lo, hi = lo0 + (loc - lo0) * k, hi0 + (hic - hi0) * k
+                        if seg.get("round_start") and t < t0 + r0:      # rounded tip: shrink toward the centre line
+                            f = math.sqrt(max(0.0, 1 - ((t0 + r0 - t) / r0) ** 2))
+                            c, half = (lo + hi) / 2, (hi - lo) / 2 * f
+                            lo, hi = c - half, c + half
+                        return lo, hi
+
+                    for y in range(h):
+                        for x in range(w):
+                            t = (x - ax) * dx_ + (y - ay) * dy_
+                            if not t0 <= t < tc:
+                                continue
+                            s_ = (x - ax) * nx_ + (y - ay) * ny_
+                            lo, hi = ext(t)
+                            outside = s_ < lo - 1.0 or s_ > hi + 1.0 or hi - lo < 0.5
+                            if outside:
+                                if lp[x, y][3] and owner[y][x] in (i, -1) or (lp[x, y][3] and hidden(x, y)):
+                                    lp[x, y] = (0, 0, 0, 0)             # leftovers outside the true outline
+                                continue
+                            if seg.get("trim_only"):
+                                continue
+                            u = (s_ - lo) / (hi - lo)
+                            st = seg.get("src_t", tc)                   # clean cross-section to copy from
+                            slo, shi = seg.get("src_ext", (loc, hic))
+                            ss = slo + u * (shi - slo)
+                            c = bilinear(rsrc, w, h, ax + dx_ * st + nx_ * ss, ay + dy_ * st + ny_ * ss)
+                            if c[3] == 0:
+                                continue
+                            missing = lp[x, y][3] == 0 or hidden(x, y)
+                            on_edge = (side == "lo" and s_ - lo < band) or (side == "hi" and hi - s_ < band)
+                            stray = "replace_above_luma" in seg and luma(lp[x, y]) >= seg["replace_above_luma"]
+                            if missing or seg.get("replace") or stray or (on_edge and luma(c) < seg.get("edge_max_luma", 200)):
+                                lp[x, y] = c
+
+            # --- complete: body colour + inked contour for hidden areas (anti-aliased)
+            comp = part.get("complete")
+            for ball in (comp or {}).get("radial", []):                 # a ball: shade hidden pixels by its own radius profile
+                (cx_, cy_), R = ball["center"], ball["r"]
+                bins = {}
+                for y in range(max(0, int(cy_ - R - 2)), min(h, int(cy_ + R + 3))):
+                    for x in range(max(0, int(cx_ - R - 2)), min(w, int(cx_ + R + 3))):
+                        d = math.hypot(x - cx_, y - cy_)
+                        if d <= R + 1.5 and owner[y][x] == i and lp[x, y][3] > 0:
+                            bins.setdefault(round(d), []).append(lp[x, y])
+                prof = {k: tuple(sum(c[j] for c in v) // len(v) for j in range(4)) for k, v in bins.items()}
+                if not prof:
+                    continue
+                for y in range(max(0, int(cy_ - R - 2)), min(h, int(cy_ + R + 3))):
+                    for x in range(max(0, int(cx_ - R - 2)), min(w, int(cx_ + R + 3))):
+                        d = math.hypot(x - cx_, y - cy_)
+                        if d <= R + 1.5 and lp[x, y][3] == 0 and hidden(x, y):
+                            lp[x, y] = prof[min(prof, key=lambda k: abs(k - d))]
+            if comp and comp.get("polys"):
+                sil = coverage((w, h), lambda d, k: [d.polygon([(px_ * k, py_ * k) for px_, py_ in poly], fill=255)
+                                                     for poly in comp["polys"]]).load()
+                todo = {(x, y) for y in range(h) for x in range(w) if sil[x, y] and lp[x, y][3] == 0 and hidden(x, y)}
+                filled = set(todo)
+                while todo:  # diffuse body colour only (outline pixels excluded, so nothing smears)
+                    ready = []
+                    for x, y in todo:
+                        nb = [lp[nx, ny] for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))
+                              if 0 <= nx < w and 0 <= ny < h and lp[nx, ny][3] == 255
+                              and luma(lp[nx, ny]) >= comp.get("min_luma", 90)]
+                        if nb:
+                            ready.append((x, y, tuple(sum(c[j] for c in nb) // len(nb) for j in range(3)) + (255,)))
+                    if not ready:
+                        break
+                    for x, y, c in ready:
+                        lp[x, y] = c
+                        todo.discard((x, y))
+                for _ in range(comp.get("smooth", 8)):                  # diffusion streaks -> smooth shading
+                    upd = []
+                    for x, y in filled:
+                        if lp[x, y][3] == 0:
+                            continue
+                        nb = [lp[nx, ny] for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), (x, y))
+                              if 0 <= nx < w and 0 <= ny < h and lp[nx, ny][3] == 255
+                              and ((nx, ny) in filled or luma(lp[nx, ny]) >= comp.get("min_luma", 90))]
+                        if nb:
+                            upd.append((x, y, tuple(sum(c[j] for c in nb) // len(nb) for j in range(3)) + (255,)))
+                    for x, y, c in upd:
+                        lp[x, y] = c
+                for x, y in filled:                                     # soft silhouette edge
+                    if lp[x, y][3] and sil[x, y] < 255:
+                        lp[x, y] = lp[x, y][:3] + (sil[x, y],)
+                lw = comp.get("line_width", 3)
+                stroke = coverage((w, h), lambda d, k: [d.line([(px_ * k, py_ * k) for px_, py_ in edge], fill=255,
+                                                               width=round(lw * k), joint="curve")
+                                                        for edge in comp.get("edges", [])]).load()
+                for y in range(h):
+                    for x in range(w):
+                        cv = stroke[x, y]
+                        if cv and hidden(x, y):
+                            r, g, b, a = lp[x, y]
+                            f = cv / 255
+                            if a == 0:
+                                lp[x, y] = tuple(ink) + (cv,)
+                            else:
+                                lp[x, y] = (round(ink[0] * f + r * (1 - f)), round(ink[1] * f + g * (1 - f)),
+                                            round(ink[2] * f + b * (1 - f)), max(a, cv))
+
+            layer.save(out / f"{save_name}.png")
+        part = base_part
         t = TINTS[i % len(TINTS)]
         for y in range(h):
             for x in range(w):
                 if owner[y][x] == i:
                     r, g, b, a = rv[x, y]
                     rv[x, y] = ((r + t[0]) // 2, (g + t[1]) // 2, (b + t[2]) // 2, 255)
-        rig["parts"].append({k: part[k] for k in ("name", "pivot", "parent", "z") if k in part} | {"pixels": count})
+        entry = {k: part[k] for k in ("name", "pivot", "parent", "z") if k in part} | {"pixels": count}
+        if part.get("alt"):
+            entry["alt_above_deg"] = part["alt"]["above_deg"]
+        rig["parts"].append(entry)
+
     for y in range(h):
         for x in range(w):
             if not bg[y][x] and owner[y][x] == -1:
                 rv[x, y] = (255, 0, 255, 255)
                 unassigned += 1
     d = ImageDraw.Draw(review)
-    for part in spec["parts"]:
+    for part in parts:
         px_, py_ = part["pivot"]
         d.ellipse([px_ - 4, py_ - 4, px_ + 4, py_ + 4], outline=(0, 0, 0), width=2)
     review.save(out / "review.png")

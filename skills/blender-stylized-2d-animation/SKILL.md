@@ -28,15 +28,20 @@ work is divided, seen, then added up:
 2. **Divide:** `python scripts/cutout_parts.py spec.json OUT/`, with one
    polygon, pivot, parent and z per part. The ball goes to the child part,
    and the pivot is at the ball centre. Shoulder-type joints get a fixed
-   cap. Hidden ends are rebuilt with `extend`, `sweep` or `complete`.
+   cap. Check which piece is drawn in front at each joint before cutting.
+   Hidden or damaged ends are rebuilt with `extend`, `rod` or `complete`.
    Gate: 0 unassigned pixels.
 3. **See:** a parts sheet, 4× grid zooms at each joint, then a rest-pose
    render with `scripts/cutout_rig.py` diffed against the original (PSNR ≥
    35 dB, every inventory item intact at zoom), then a joint stress test at
-   the limits.
-4. **Add up:** poses and animation as joint angles with per-joint limits
-   (out-of-range poses are clamped and reported). Walks use contact, down,
-   passing, up, with foot lock. Compare against any poses the artist drew.
+   the limits. The rest-pose diff cannot see rebuilt areas, so also run
+   `scripts/cutout_check.py REST.png POSED...` on posed frames and zoom every
+   joint in the most extreme delivered frames.
+4. **Add up:** generate motion with `scripts/cutout_motion.py` (walk, wave,
+   idle as dense per-frame keys): each joint follows its parent a few
+   frames late, moves ease in and out, big moves get anticipation and
+   overshoot, and planted feet are locked. Per-joint limits clamp and report
+   impossible poses. Compare against any poses the artist drew.
 5. Views or hand shapes the artist never drew are new drawings: ask for
    them, and never invent them during animation.
 
@@ -44,7 +49,11 @@ work is divided, seen, then added up:
 blender -b --factory-startup --python scripts/cutout_rig.py -- OUT/ anim.json RENDERS/
 ```
 
-`tests/test_cutout_parts.py` covers the cutter (no Blender needed).
+`tests/test_cutout_parts.py` and `tests/test_cutout_motion.py` cover the cutter,
+the edge gate, and the motion generator's foot lock (no Blender needed). For
+work a client will see, have independent reviewers judge the posed frames
+before delivery; two review rounds on the reference character found real
+defects that every automated gate had passed.
 
 ## Connect
 
