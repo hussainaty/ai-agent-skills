@@ -105,9 +105,41 @@ pixels only show when a joint moves.
 
 | Case | Spec op | Example |
 |---|---|---|
-| A straight rod disappears under a part (vertical) | `extend` (repeat one clean row) | thigh rods under the torso; antenna stems behind the helmet |
-| A straight rod at an angle | `sweep` (slide a clean cross-section along the axis) | upper-arm rod under a fixed shoulder cap |
-| A body edge under a limb | `complete` (silhouette polygons filled with body colour, outline pixels excluded, then the measured contour inked in the part's own outline colour) | torso sides and corners under the arms |
+| A straight rod disappears under a part (vertical) | `extend` (repeat one clean row; a list for both ends) | thigh rods under the torso and under the knee balls; antenna stems behind the helmet |
+| A cut ran along a rod's edge and took its outline, or the rod's end is hidden | `rod` (rebuild from a clean cross-section, scaled to the measured taper, bilinear; rounded inked tip; visible pixels kept) | upper-arm rods that touched the torso |
+| A body edge under a limb | `complete` (silhouette polygons filled with smoothed body colour, then the measured contour inked, both anti-aliased) | torso sides under the arms |
+| The top of a ball joint under another piece | `complete` with `radial` (hidden pixels take the ball's own colour-by-radius profile) | elbow balls under the rod tips |
+| No single image is right both at rest and when raised | `alt` (a second drawing of the part; the rig swaps it in above an angle) | an upper arm whose top carries part of the shoulder drawing |
+
+**Remove the page matte.** Outline rim pixels in a flattened image are
+blended with the page colour. Over the page that is invisible; over another
+part it is a pale fringe. `defringe` (on by default) turns each rim pixel
+into the outline colour with partial alpha. On the robot this alone raised
+the rest-pose match and removed the "double line" on moved arms.
+
+**Use a drawing swap when one image cannot serve two poses.** The top of
+the robot's upper arm carries the lower half of the artist's shoulder
+shading. It belongs there at rest and reads as a streak when the arm is
+raised. Rebuilding it made the rest pose wrong (a "pipe" look); keeping it
+left the streak. Cut-out animators keep two drawings and switch. The `alt`
+op writes `<name>__alt.png`, and the rig shows it while the joint is more
+than `above_deg` from rest (20° here). Once a part has a swap, leave its
+first drawing as the artist's untouched pixels (plus the tip hidden under
+the cap, and a trim of stray neighbour pixels). Re-inking it as well put a
+hatched patch on the low-angle arm; removing that work raised the rest-pose
+match from 36.8 to 38.4 dB.
+
+**Read the overlap before cutting a joint.** Zoom in and see which piece is
+drawn in front. On the robot, the upper arm ends in a rounded tip drawn *in
+front of* the elbow ball. A straight cut across the elbow sliced that tip in
+two, and both halves showed as chips when the elbow bent. The correct cut
+follows the rounded tip, puts the upper arm above the forearm in z, and
+completes the ball's hidden top as a full circle.
+
+**A rebuilt part must not change the rest pose.** The first rod rebuild
+overwrote visible pixels and turned each arm into a pipe pushed into the
+shoulder; the rest-pose gate dropped to 34.5 dB and caught it. Keep visible
+original pixels; write only missing or hidden ones.
 
 Do not borrow hidden areas from a different drawing of the character unless
 it registers exactly. On the robot, the artist's arms-up drawing has a
@@ -117,23 +149,37 @@ which the artist drew every part complete. Ask for it when it exists.
 
 ## Motion rules
 
-- **Walk (24 frames, 2 steps):** contact (1) -> down (4) -> passing (7) ->
-  up (10) -> contact (13), mirrored. Down is lowest, passing has the free
-  foot at its highest, and up is highest.
-- **Foot lock.** The standing foot must not slide. In a cut-out, move the
-  body up and down and slide the standing leg by the opposite amount (its
-  hidden top, rebuilt with `extend`, slides under the torso). Do not move
-  the root sideways while a foot is planted. Measure it: on the robot, the
-  standing foot stayed within ±2 px across each half-cycle while the free
-  foot rose 30–39 px.
-- **Opposition and overlap.** Arms swing against the legs. The head
-  counter-tilts against the torso. Antennae, hair and other loose parts lag
-  the head by a few frames (follow-through).
+Generate motion with `scripts/cutout_motion.py` (dense per-frame keys from a
+rig map), then adjust. It encodes the rules below. Sparse hand-set poses
+with default interpolation look mechanical.
+
+- **Successive breaking of joints.** A limb is a chain: the shoulder leads,
+  the elbow repeats the motion about 2 frames later, the wrist about 4 frames
+  later. The head leads the antennae (or hair, ears) by about 3 frames. This
+  one rule is most of the difference between jointed and stiff.
+- **Slow in, slow out.** Smoothstep every transition; use sines for cycles.
+  Key every frame (on ones) at 24 fps for smooth motion.
+- **Anticipation, overshoot, settle.** Before a big move, a small move the
+  other way (a dip before raising an arm). After it, go slightly past the
+  pose and come back.
+- **Walk:** contact -> down -> passing -> up -> contact, mirrored. A child
+  takes about 10 frames per step with a bigger bounce; an adult about 12.
+  Down is lowest, passing has the free foot highest, up is highest.
+- **Foot lock.** The standing foot must not move. The body bobs, and the
+  planted leg slides by the opposite amount (its hidden top, rebuilt with
+  `extend`, slides under the torso).
+- **The pelvis tilts; the standing leg stays vertical.** When the torso
+  leans over the standing leg, the legs are its children and would swing
+  with it, sliding the feet sideways. Counter-rotate each thigh by the lean
+  and cancel the hip's small rise (`hip_dx` in the rig map). Measure both
+  vertical and horizontal foot drift.
+- **Opposition.** Arms swing against the legs; the head counter-tilts
+  against the torso, a couple of frames late.
 - **Front-view walks are subtle.** Most of a walk happens toward the
   camera. A front view shows the bob, the foot lift, the weight shift and
   the arm swing. A profile walk needs a profile drawing.
-- **Waves and gestures:** a ready pose, then 2–4 beats alternating
-  forearm and hand angles, then settle. Keep the hand clear of the face.
+- **Gestures:** keep the hand clear of the face; let the hand drag behind
+  the forearm on each beat.
 
 ## Gates and numbers
 
@@ -143,7 +189,9 @@ which the artist drew every part complete. Ask for it when it exists.
 | Parts clean | No neighbour strips, stubs, or missing outlines | parts sheet, 4× zooms |
 | Rest reassembly | PSNR ≥ 35 dB; every inventory item matches at zoom | `cutout_rig.py` + diff |
 | Joints | No gaps, stubs, or smears at the limits; bad poses clamped | joint stress sheet, `report.json` |
-| Feet | Standing-foot drift ≤ 3 px per step | lowest opaque pixel per frame |
+| Feet | Standing-foot drift ≤ 3 px per step, vertical and horizontal | lowest opaque pixel and its x-centre per frame |
+| Posed edges | No detached fragments; un-inked silhouette edge no more than 1.5 points above the rest pose | `scripts/cutout_check.py REST.png POSED...` |
+| Posed joints, by eye | 3x zooms of every joint in the most extreme delivered frames, and the frames at 1x | zoom sheet; an independent reviewer |
 | Poses | Close to any artist-drawn version of the same pose | side-by-side sheet |
 
 Render settings matter for line art. Use **Linear** texture interpolation
@@ -152,6 +200,36 @@ around 0.5 px (EEVEE's default of 1.5 px softens every edge). Use the
 Standard view transform, emission shading, and an orthographic camera at 1
 texture pixel per screen pixel. On the robot, these two settings moved the
 rest-pose diff from 26.3 dB to 37.4 dB.
+
+## Lessons from independent review
+
+Three rounds of blind review (three reviewers each, with different lenses:
+a rigging supervisor hunting defects, an animation director auditing the
+motion, and a builder arguing to ship) judged this work. The first two
+rounds rejected versions that had passed every automated gate; the third
+accepted two to one, and the dissent's finding was fixed afterwards. What
+they found:
+
+- **The rest-pose diff cannot see hidden areas.** Everything rebuilt is
+  hidden at rest by design, so a 37 dB rest pose says nothing about a raised
+  arm. Posed frames need their own checks: the edge gate, 3x zooms, and a
+  look at 1x.
+- **Measure the defect at delivery size.** A streak described as "about
+  8 px" was 25 px and visible at 1x for two thirds of a shot. Check the
+  delivered frames, not only the zooms.
+- **A one-way move is not a swing.** Arms that only opened outward read as
+  a wing flapping. A swing passes through the rest pose in both directions.
+  The opposite mistake came next: a 3.5 degree swing was correct and
+  invisible. Amplitudes have to be large enough to read (about 7 degrees at
+  the shoulder, 12 at the elbow for a child's walk seen from the front).
+- **Weight leads the step.** The pelvis should arrive over the standing
+  foot about 2 frames before the other foot lifts.
+- **Reject advice that breaks anatomy.** One reviewer asked for a bigger
+  sideways knee bend. In a front view the knee bends toward the camera, so
+  the free leg rises by sliding under the torso, with only a small outward
+  swing.
+- **Judge motion as motion.** Stills and parameters cannot show whether a
+  swing reads. Deliver a GIF or MP4 and have it watched.
 
 ## What one drawing cannot give you
 
@@ -177,5 +255,10 @@ rest-pose diff from 26.3 dB to 37.4 dB.
 - Walk key poses (contact, down, passing, up), hips versus shoulders, and
   arm swing, after Richard Williams' *The Animator's Survival Kit*:
   https://courses.cs.washington.edu/courses/cse459/19au/assignments/assignment_5/index.html
+- Successive breaking of joints and drag (shoulder, elbow, wrist, fingers in turn):
+  https://courses.cs.washington.edu/courses/cse459/12au/assignments/assignment_5/successive_breaking_of_joints.html,
+  https://brianlemay.com/Pages/animationschool/animation/1stsemesteranimation/10armswing/10armswing.html
+- Children move with a faster cadence than adults (gait features):
+  https://init.cise.ufl.edu/?p=2542
 - Why generated characters drift (no identity memory between generations):
   https://getimg.ai/blog/how-to-create-consistent-characters-with-ai

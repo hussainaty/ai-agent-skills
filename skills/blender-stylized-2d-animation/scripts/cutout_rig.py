@@ -21,7 +21,9 @@ ANIM.json:
 
 A pose may also move a part: {"thigh_l@move": [0, -12]} slides the part in
 pixels (screen down = +y), e.g. lifting a leg whose hidden top was rebuilt.
-"root" moves the whole character. Rotations outside "limits" are clamped and
+Parts with "alt_above_deg" in rig.json (from the cutter's "alt") have two
+drawings; the alternative one is shown while the joint is rotated more than
+that many degrees from rest (a drawing swap). "root" moves the whole character. Rotations outside "limits" are clamped and
 reported in OUT_DIR/report.json, so impossible joints never reach a render.
 """
 import json
@@ -76,6 +78,7 @@ def build(parts_dir: Path, pad=(0, 0, 0, 0)):
     for ob in list(bpy.data.objects):
         bpy.data.objects.remove(ob)
     empties = {}
+    swaps = {}
     order = []
     pending = list(rig["parts"])
     while pending:  # parents first
@@ -107,6 +110,15 @@ def build(parts_dir: Path, pad=(0, 0, 0, 0)):
         plane.parent = e
         plane.location = (cx - pw[0], cy - pw[1], p.get("z", 0) * 0.01)
         plane.data.materials.append(make_material(p["name"], parts_dir / f"{p['name']}.png"))
+        if "alt_above_deg" in p:   # drawing swap: a second plane with the alternative drawing
+            alt = plane.copy()
+            alt.data = plane.data.copy()
+            alt.name = f"A_{p['name']}"
+            bpy.context.scene.collection.objects.link(alt)
+            alt.data.materials.clear()
+            alt.data.materials.append(make_material(p["name"] + "__alt", parts_dir / f"{p['name']}__alt.png"))
+            alt.hide_render = True
+            swaps[p["name"]] = (plane, alt, p["alt_above_deg"])
     root = empties[order[0]["name"]]
     cam_data = bpy.data.cameras.new("cam")
     cam_data.type = "ORTHO"
@@ -134,7 +146,7 @@ def build(parts_dir: Path, pad=(0, 0, 0, 0)):
     sc.view_settings.look = "None"
     sc.render.image_settings.file_format = "PNG"
     sc.render.image_settings.color_mode = "RGBA"
-    return rig, empties, root
+    return rig, empties, root, swaps
 
 
 def pose_values(pose: dict, limits: dict, report: list, shot: str, frame: int):
@@ -156,7 +168,7 @@ def pose_values(pose: dict, limits: dict, report: list, shot: str, frame: int):
 def main():
     parts_dir, anim, out = args()
     out.mkdir(parents=True, exist_ok=True)
-    rig, empties, root = build(parts_dir, tuple(anim.get("pad", [0, 0, 0, 0])))
+    rig, empties, root, swaps = build(parts_dir, tuple(anim.get("pad", [0, 0, 0, 0])))
     sc = bpy.context.scene
     sc.render.fps = anim.get("fps", 24)
     limits = anim.get("limits", {})
@@ -182,6 +194,9 @@ def main():
         frames = range(1, shot["frames"] + 1) if shot.get("render") == "all" else shot.get("render", [1])
         for f in frames:
             sc.frame_set(f)
+            for name, (plane, alt, above) in swaps.items():      # show the drawing that suits this angle
+                use_alt = abs(math.degrees(empties[name].rotation_euler.z)) > above
+                plane.hide_render, alt.hide_render = use_alt, not use_alt
             sc.render.filepath = str(out / f"{shot['name']}_{f:03d}.png")
             bpy.ops.render.render(write_still=True)
     (out / "report.json").write_text(json.dumps({"clamped": report}, indent=2), encoding="utf-8")
