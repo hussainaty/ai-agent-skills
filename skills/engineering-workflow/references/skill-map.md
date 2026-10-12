@@ -114,6 +114,13 @@ A missing skill is skipped and noted in `STATE.md`.
 |---|---|---|
 | `blender-stylized-2d-animation` | Blender 2D animation | bundled |
 | `remotion-*` | Video with Remotion | remotion-dev/skills |
+| `rigc`, `rigc-motion` | Spine rigs and motion from key poses, validated before writing, with variants to vote on | rig-c/core |
+| `spine-animation` | Spine export pipeline and web preview. Its splitter regenerates body parts with an image model, so do not use it where the artist's pixels must be kept | GenielabsOpenSource/spine-animation-ai |
+| `character-rigging` (OpenMontage) | Data-driven SVG character rigs inside an agentic video pipeline | calesthio/OpenMontage (AGPL-3.0) |
+| `animation-quality-gate` | Review gate for Blender 3D animation: contact sheets, silhouette, flicker | RobLe3/cc-blender-skill |
+| `scenario-blender-animation` | Blender 3D animation with generated assets | scenario-labs/skills |
+| `blender-animation` (MCP) | Blender modelling, rigging and animation through an MCP add-on | dcc-mcp/dcc-mcp-blender |
+| `hyperframes-animation` | HTML written as video frames | heygen-com/hyperframes |
 | `agent-pods`, `watchall`, `watchandlearn`, `watchconsole` | Agent pods and observers | vendor/agent-pods |
 | `senior-prompt-engineer` | Prompt design | credited in README |
 
@@ -125,6 +132,10 @@ npx skills add softaworks/agent-toolkit --agent claude-code          # review fi
 npx skills add anthropics/knowledge-work-plugins --skill account-research --agent claude-code
 npx skills add vercel-labs/agent-browser --agent claude-code
 npx skills add remotion-dev/skills --agent claude-code
+npx skills add rig-c/core --agent claude-code                         # Spine rigs and motion
+npx skills add RobLe3/cc-blender-skill --agent claude-code            # Blender 3D + animation review gate
+npx skills add scenario-labs/skills --agent claude-code               # generated assets, Blender 3D animation
+npx skills add heygen-com/hyperframes --agent claude-code             # HTML to video
 npx skills add hamelsmu/evals-skills --skill error-analysis --agent claude-code
 npx skills add tirth8205/code-review-graph --skill refactor-safely --agent claude-code
 npx skills add github/awesome-copilot --skill repo-story-time --agent claude-code

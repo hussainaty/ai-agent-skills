@@ -54,7 +54,7 @@ The full list of collected skills, and where each one fits, is in
 | [`remote-agent-graphify`](skills/remote-agent-graphify) | Prepares and refreshes Graphify repository context for agents running in Coder workspaces or the TrueForge harness, with explicit token budgets. |
 | [`global-memory-recovery`](skills/global-memory-recovery) | Keeps a device-local, account-independent map of projects and task IDs, so work can continue after an account switch or lost chat. Never stores transcripts or secrets. |
 | [`verified-code-translation`](skills/verified-code-translation) | Ports code between languages, especially high-level to C, Rust, or assembly. It orders the work by the dependency graph, untangles cycles, flags lock-order deadlock risks, and runs isolated implementer/adversarial-reviewer pairs in Docker containers that scale up and down. It proves the new "engine" behaves like the old one with black-box differential fuzzing and produces an evidence package for safety-critical review (DO-178C, IEC 61508, IEC 60880, NASA). |
-| [`scrapegraphai-research`](skills/scrapegraphai-research) | Web research with ScrapeGraphAI and Exa, Agent Reach install/update for platform content (YouTube, GitHub, Reddit, X, RSS), plus a scientific mode that scales effort to the question, vets papers (venue, artifacts, scale), and verifies every citation. |
+| [`scrapegraphai-research`](skills/scrapegraphai-research) | Web research with ScrapeGraphAI and Exa, Agent Reach install/update for platform content (YouTube, GitHub, Reddit, X, RSS), a key-free route through the local open-source ScrapeGraphAI library (`scripts/sgai_local.py`), plus a scientific mode that scales effort to the question, vets papers (venue, artifacts, scale), and verifies every citation. |
 | [`blender-stylized-2d-animation`](skills/blender-stylized-2d-animation) | Builds stylized 2D-look (cel/toon) Blender scenes through the Blender Lab MCP: flat colour bands, inverted-hull outlines, boil animation on twos, procedural fire, Geometry Nodes bubbles. **Animates existing character art without losing detail:** cuts the original drawing into jointed parts (never redraws it), rebuilds hidden joint ends, enforces joint limits, and walks with foot lock, generates jointed motion (each joint follows its parent a few frames late, planted feet locked), and gates every step (0 unassigned pixels, rest pose ≥ 35 dB versus the original, edge check on posed frames). |
 
 ## Install
@@ -102,11 +102,12 @@ configuration are included.
   [`references/worked-example.md`](skills/verified-code-translation/references/worked-example.md),
   including the bugs that run found in the skill itself.
 - **blender-stylized-2d-animation:** built and rendered headless on Blender 5.2.1 LTS (EEVEE). The cut-out workflow was proven on a real
-  character that an earlier AI attempt had redrawn and lost detail on. The rest pose matches the original at 38.4 dB with every freckle
-  and boot line intact; planted feet stay within 3 px through the walk; impossible poses are clamped; an edge gate passes on posed frames.
-  Three rounds of blind review by a three-reviewer jury drove the fixes (matte removal, rebuilt rod ends, drawing swap, pendulum arm swing,
-  weight shift); the third round accepted two to one. The client artwork is not published. 12 tests cover the cutter, the edge gate and
-  the motion generator's foot lock on synthetic figures (`tests/`).
+  character that an earlier AI attempt had redrawn and lost detail on. The rest pose matches the original at 35.8 dB with every freckle
+  and boot line intact. Arms are bent by bones (one flexible sheet per arm), so the elbows have no seam; a patch behind the torso closes
+  the hairline under the arms. An automatic gate checked all 118 frames of the walk, wave and idle for detached fragments, pinholes and
+  un-inked edges, and all passed; planted feet stay within 3 px; contact-sheet reports found no pops. Three rounds of blind review by a
+  three-reviewer jury drove the earlier fixes. The client artwork is not published. 13 tests cover the cutter, the patches, the edge
+  gate and the motion generator's foot lock on synthetic figures (`tests/`).
 - **scrapegraphai-research:** used for the research behind `verified-code-translation`.
   Sources are in [`references/research.md`](skills/verified-code-translation/references/research.md).
 

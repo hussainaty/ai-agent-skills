@@ -42,6 +42,14 @@ npx skills add anthropics/skills --skill frontend-design --agent claude-code
 npx skills add anthropics/knowledge-work-plugins --skill account-research --agent claude-code
 npx skills add phuryn/pm-skills --skill ideal-customer-profile --agent claude-code
 
+# Animation (each for its own job; the bundled blender skill covers cut-out animation of existing art)
+npx skills add rig-c/core --agent claude-code                 # Spine rigs and motion, validated, with variants to vote on
+npx skills add RobLe3/cc-blender-skill --agent claude-code    # Blender 3D + an animation review gate
+npx skills add scenario-labs/skills --agent claude-code       # generated assets and Blender 3D animation
+npx skills add heygen-com/hyperframes --agent claude-code     # HTML written as video
+# GenielabsOpenSource/spine-animation-ai exports to Spine, but its splitter regenerates the art with an image
+# model: avoid it when the artist's pixels must be kept. calesthio/OpenMontage (AGPL-3.0) is a full video pipeline.
+
 # Video, code search, prompts, skill discovery
 npx skills add remotion-dev/skills --agent claude-code
 npx skills add ast-grep/agent-skill --agent claude-code

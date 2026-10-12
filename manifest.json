@@ -10,7 +10,7 @@
     {
       "name": "blender-stylized-2d-animation",
       "description": "Build and animate stylized \"2D-look\" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender, and animate EXISTING 2D character art without losing detail by cutting the original drawing into jointed parts (cut-out rig) instead of redrawing it. Covers flat colour bands, inverted-hull outlines, boil on twos, procedural fire, Geometry Nodes bubbles, joint pivots and limits, walk cycles with foot lock, and per-part review gates. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or wants an existing character posed, animated, or turned into a sprite set. Not for photoreal rendering.",
-      "tree_sha256": "dceb9415bc365ca7f994da3f1c24fcc23f06eceb18e8b3256fbac57fdcbdeb38"
+      "tree_sha256": "ae369becdfe627f890d4e5c0940f0c382f54c42f3e4f8b7d0178d4438ccc811a"
     },
     {
       "name": "client-profiling",
@@ -20,7 +20,7 @@
     {
       "name": "engineering-workflow",
       "description": "Runs a full software-engineering workflow from idea to documented release - research first, then every open question handed to the human, then tasks split into a dependency graph where each task has an implementer agent and a reviewer jury with a judge, a testing team after every task, integration of the tasks, whole-project testing, a project knowledge graph, and a memory update. Use when the user wants to build, rebuild, or substantially extend a product or system end to end, asks for \"the full workflow\", \"research then build\", \"plan and implement with reviewers\", or wants a client project delivered with evidence. Not for one-line fixes, quick questions, or a single isolated change.",
-      "tree_sha256": "7dbc46b67ca42e3f254cbc9adf05dc376d8c6af4933da16908556fb6ef3da38b"
+      "tree_sha256": "e5d3ae7c656f98d50f514027376f584be5a678a7538dfd88007f6de18520aea1"
     },
     {
       "name": "global-memory-recovery",
@@ -39,8 +39,8 @@
     },
     {
       "name": "scrapegraphai-research",
-      "description": "Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Also installs, updates, and uses Agent Reach for platform content such as YouTube, GitHub, Reddit, Twitter/X, Bilibili, and RSS, including when the user pastes an Agent Reach install.md or update.md link. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.",
-      "tree_sha256": "1f902856a977956b77afdf87a12d139d48aee83b39ef1aa47bfbb97f0ed53757"
+      "description": "Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Also installs, updates, and uses Agent Reach for platform content such as YouTube, GitHub, Reddit, Twitter/X, Bilibili, and RSS, including when the user pastes an Agent Reach install.md or update.md link. Works without an API key through the local open-source ScrapeGraphAI library or the user's own signed-in accounts. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.",
+      "tree_sha256": "0dae7d1827a259a828083d3ceda46d954e036df758f87e1d1f57cd634830fc18"
     },
     {
       "name": "session-wrap-up",

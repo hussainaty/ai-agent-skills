@@ -35,14 +35,17 @@ work is divided, seen, then added up:
    render with `scripts/cutout_rig.py` diffed against the original (PSNR ≥
    35 dB, every inventory item intact at zoom), then a joint stress test at
    the limits. The rest-pose diff cannot see rebuilt areas, so also run
-   `scripts/cutout_check.py REST.png POSED...` on posed frames and zoom every
-   joint in the most extreme delivered frames.
+   `scripts/cutout_check.py REST.png "RENDERS/*.png" --summary` on every
+   frame, and zoom every joint in the most extreme delivered frames.
 4. **Add up:** generate motion with `scripts/cutout_motion.py` (walk, wave,
    idle as dense per-frame keys): each joint follows its parent a few
    frames late, moves ease in and out, big moves get anticipation and
    overshoot, and planted feet are locked. Per-joint limits clamp and report
    impossible poses. Compare against any poses the artist drew.
-5. Views or hand shapes the artist never drew are new drawings: ask for
+5. Bend limbs with bones where seams matter: a `skins` entry turns an arm or
+   leg into one flexible sheet bent by an armature, so the bent joint has no
+   seam. Review every shot with `scripts/contact_sheet.py` before accepting it.
+6. Views or hand shapes the artist never drew are new drawings: ask for
    them, and never invent them during animation.
 
 ```

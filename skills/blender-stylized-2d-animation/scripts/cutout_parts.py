@@ -55,7 +55,9 @@ smears); "edges" is the measured contour, inked in the part's own outline
 colour. Fill and ink are anti-aliased (4x supersampled), and the fill is
 smoothed. "radial": [{"center": [x, y], "r": n}] completes a ball joint
 instead: hidden pixels take the ball's own colour-by-radius profile, which
-also continues its rim outline.
+also continues its rim outline. "bleed": n lets the ink cover background
+slivers within n px of a hidden pixel, so the rebuilt line is not clipped into
+teeth by a tiny gap in the original.
 
 "alt": {"above_deg": n, "ops": {...}} makes a second drawing of the part
 (<name>__alt.png) with the given repair ops replacing the part's own. The
@@ -63,6 +65,22 @@ rig shows it instead of the first drawing whenever the joint is rotated more
 than n degrees from rest. This is the cut-out "drawing swap": use it when no
 single image is right both at rest and when raised (for example, a rod whose
 top carries part of a shoulder drawing).
+
+"underlay": {"z": n, "grow": 2} adds a patch (<name>__under.png): the
+part's silhouette grown by a few pixels, in outline colour, attached to the
+part but layered at z (behind the neighbour it rests against). It is fully
+hidden at rest. When the part lifts away, it fills the hairline that would
+open between the two outlines, so they read as touching. This is the studio
+"patch articulation".
+
+Top-level "skins": [{"name": "arm_r", "layers": ["forearm_r", "upper_arm_r__alt"],
+"joints": ["upper_arm_r", "forearm_r"], "z": 8, "blend": 10}] flattens the
+listed part images (back to front) into <name>__skin.png. The rig draws it on
+a fine mesh that two bones bend at the second joint, blending over +/- "blend"
+pixels, instead of the rigid planes of those parts. A bent joint then has no
+seam at all. Use it for limbs; keep rigid planes for heads, bodies and props.
+Optional "alt_layers" + "alt_above_deg" give the skin a second look that
+cross-fades in above that angle of its first joint (the drawing swap).
 
 "defringe" (default true) removes the page-colour matte from outline rim
 pixels: a rim pixel that was blended with the background becomes the outline
@@ -283,6 +301,10 @@ def main(spec_path: str, out_dir: str) -> int:
                             if seg.get("trim_only"):
                                 continue
                             u = (s_ - lo) / (hi - lo)
+                            if not 0.0 <= u <= 1.0:                     # never sample past the clean cross-section:
+                                if lp[x, y][3] and (owner[y][x] in (i, -1) or hidden(x, y)):
+                                    lp[x, y] = (0, 0, 0, 0)             # whatever lies beyond it is a neighbour's stray pixel
+                                continue
                             st = seg.get("src_t", tc)                   # clean cross-section to copy from
                             slo, shi = seg.get("src_ext", (loc, hic))
                             ss = slo + u * (shi - slo)
@@ -350,10 +372,19 @@ def main(spec_path: str, out_dir: str) -> int:
                 stroke = coverage((w, h), lambda d, k: [d.line([(px_ * k, py_ * k) for px_, py_ in edge], fill=255,
                                                                width=round(lw * k), joint="curve")
                                                         for edge in comp.get("edges", [])]).load()
+                bleed = comp.get("bleed", 0)   # also ink background slivers this close to a hidden pixel
+
+                def inkable(x, y):
+                    if hidden(x, y):
+                        return True
+                    return bool(bleed) and bg[y][x] and any(
+                        0 <= x + dx < w and 0 <= y + dy < h and hidden(x + dx, y + dy)
+                        for dx in range(-bleed, bleed + 1) for dy in range(-bleed, bleed + 1))
+
                 for y in range(h):
                     for x in range(w):
                         cv = stroke[x, y]
-                        if cv and hidden(x, y):
+                        if cv and inkable(x, y):
                             r, g, b, a = lp[x, y]
                             f = cv / 255
                             if a == 0:
@@ -364,6 +395,40 @@ def main(spec_path: str, out_dir: str) -> int:
 
             layer.save(out / f"{save_name}.png")
         part = base_part
+        und = part.get("underlay")
+        if und:   # patch articulation: an ink strip that follows this part but sits BEHIND its neighbour
+            base_img = Image.open(out / f"{part['name']}.png").load()
+            g = und.get("grow", 2)
+            patch = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            pp = patch.load()
+            n_under = 0
+            for y in range(h):
+                for x in range(w):
+                    o = owner[y][x]
+                    if o < 0 or z_of(o) <= und["z"]:
+                        continue          # keep only what something in front hides at rest: the rest pose cannot change
+                    if any(not (0 <= x + dx < w and 0 <= y + dy < h) or owner[y + dy][x + dx] < 0
+                           or z_of(owner[y + dy][x + dx]) <= und["z"]
+                           for dx in (-2, 0, 2) for dy in (-2, 0, 2)):
+                        continue          # stay clear of soft rim pixels, which would let the patch show through
+                    if any(0 <= x + dx < w and 0 <= y + dy < h and base_img[x + dx, y + dy][3] > 128
+                           for dx in range(-g, g + 1) for dy in range(-g, g + 1) if dx * dx + dy * dy <= g * g + 1):
+                        pp[x, y] = tuple(ink) + (255,)
+                        n_under += 1
+            from PIL import ImageFilter                              # smooth the outline: drop spikes thinner than 3 px
+            alpha = patch.getchannel("A").filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
+            alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
+            keep = alpha.load()
+            n_under = 0
+            for y in range(h):
+                for x in range(w):
+                    if pp[x, y][3] and not keep[x, y]:
+                        pp[x, y] = (0, 0, 0, 0)
+                    elif pp[x, y][3]:
+                        n_under += 1
+            patch.save(out / f"{part['name']}__under.png")
+            rig["parts"].append({"name": part["name"] + "__under", "pivot": part["pivot"], "parent": part["name"],
+                                 "z": und["z"], "pixels": n_under, "follows_base_of": part["name"]})
         t = TINTS[i % len(TINTS)]
         for y in range(h):
             for x in range(w):
@@ -374,6 +439,25 @@ def main(spec_path: str, out_dir: str) -> int:
         if part.get("alt"):
             entry["alt_above_deg"] = part["alt"]["above_deg"]
         rig["parts"].append(entry)
+
+    for skin in spec.get("skins", []):   # a limb bent by bones: its layers flattened into one image, back to front
+        img_s = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        for layer_name in skin["layers"]:
+            img_s.alpha_composite(Image.open(out / f"{layer_name}.png"))
+        img_s.save(out / f"{skin['name']}__skin.png")
+        if skin.get("alt_layers"):         # a second look for raised angles (drawing swap on the skin)
+            img_a = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            for layer_name in skin["alt_layers"]:
+                img_a.alpha_composite(Image.open(out / f"{layer_name}.png"))
+            img_a.save(out / f"{skin['name']}__skin_alt.png")
+            bb_a, bb_s = img_a.getbbox(), img_s.getbbox()
+            img_s_bbox = [min(bb_a[0], bb_s[0]), min(bb_a[1], bb_s[1]), max(bb_a[2], bb_s[2]), max(bb_a[3], bb_s[3])]
+        else:
+            img_s_bbox = list(img_s.getbbox())
+        entry = {k: skin[k] for k in ("name", "joints", "layers", "z", "alt_layers", "alt_above_deg") if k in skin}
+        entry.update(bbox=img_s_bbox, blend=skin.get("blend", 10), grid=skin.get("grid", 4),
+                     fade_under=skin.get("fade_under"))
+        rig.setdefault("skins", []).append(entry)
 
     for y in range(h):
         for x in range(w):
