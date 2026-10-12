@@ -19,6 +19,9 @@ Motion is built from animation principles instead of sparse hand poses:
   offset from the torso pivot, length = hip to sole, both in pixels).
 - Timing: "kid" walks take 10 frames per step at 24 fps with a bigger bounce;
   "adult" walks take 12.
+- Blinks: fast down (2 frames), a 1-frame hold, slower up (3 frames).
+- Lip-sync: a viseme list with frame counts. Shapes blend into each other, but a lip
+  closure (b, m) is held exactly. The built-in phrase is the Arabic basmala.
 Every frame is keyed (animate on ones), so the result is smooth at 24 fps.
 
 rigmap.json names the joints and the sign that raises each limb outward
@@ -29,7 +32,9 @@ rigmap.json names the joints and the sign that raises each limb outward
            "r": {"upper": "upper_arm_r", "fore": "forearm_r", "hand": "hand_r", "sign": 1}},
   "legs": {"l": {"thigh": "thigh_l", "shin": "shin_l", "sign": -1, "hip_dx": -36, "length": 330},
            "r": {"thigh": "thigh_r", "shin": "shin_r", "sign": 1, "hip_dx": 53, "length": 330}},
-  "wave_arm": "r"
+  "wave_arm": "r",
+  "eyes": ["eye_l", "eye_r"],                       # optional: enables blinks
+  "mouth": {"top": "lip_top", "jaw": "jaw", "inside": "mouth_in"}   # optional: enables the speak shot
 }
 base_anim.json supplies fps, pad, limits, and any extra poses/shots to keep.
 """
@@ -172,6 +177,124 @@ def idle(rm: dict, style: str) -> dict:
     return {"name": "idle", "frames": n, "keys": keys, "render": "all"}
 
 
+def blink_scale(f: int, at: list[int]) -> float:
+    """Eye height (1 = open) for frame f, for blinks starting at the frames in `at`.
+    A blink closes in 2 frames, holds 1, and opens in 3: fast down, slower up."""
+    shape = [0.55, 0.1, 0.1, 0.35, 0.7, 0.92]
+    for t in at:
+        if 0 <= f - t < len(shape):
+            return shape[f - t]
+    return 1.0
+
+
+def add_blinks(shot: dict, rm: dict, at: list[int]) -> dict:
+    for i, (_, pose) in enumerate(shot["keys"]):
+        for eye in rm.get("eyes", []):
+            pose[f"{eye}@scale"] = [1, blink_scale(i, at)]
+    return shot
+
+
+# Mouth shapes (visemes). Each is (jaw, width): jaw scales the lower lip about the mouth corners
+# (1 = the drawn smile, < 1 closes, > 1 opens) and width scales the whole mouth sideways.
+# Only sounds made at the lips and teeth are visible on a face. Sounds from the back of the mouth
+# and throat (Arabic h, the pharyngeal H, and to a degree r, l, n) take the shape of the vowel
+# beside them, so they are given in-between shapes here.
+VISEMES = {
+    "rest": (1.0, 1.0),
+    "closed": (0.3, 1.0),     # b, m: lips pressed together
+    "s": (1.05, 1.05),        # teeth together, lips a little spread
+    "i": (1.3, 1.07),         # kasra / long ii: narrow and spread
+    "l": (1.5, 1.0),          # tongue tip up, mouth part open
+    "n": (1.35, 1.0),
+    "r": (1.4, 1.0),
+    "h": (1.6, 1.0),          # glottal: open, shaped by the vowels around it
+    "a": (2.0, 0.97),         # fatha: open
+    "H": (1.9, 0.97),         # pharyngeal H (as in rahman): open, like its vowel
+    "aa": (2.6, 0.94),        # long alif, widest; deepest after the heavy l of "Allah"
+}
+
+# "bismi llaahi r-rahmaani r-rahiim" as (viseme, frames at 24 fps). About 3.5 seconds, an unhurried recitation pace.
+BASMALA = [("closed", 3), ("i", 3), ("s", 3), ("closed", 3), ("i", 3),                  # bis-mi
+           ("l", 2), ("l", 2), ("aa", 7), ("h", 3), ("i", 3),                           # l-laa-hi
+           ("r", 2), ("r", 2), ("a", 4), ("H", 3), ("closed", 3), ("aa", 7), ("n", 3), ("i", 3),   # r-rah-maa-ni
+           ("r", 2), ("r", 2), ("a", 4), ("H", 3), ("i", 8), ("closed", 4)]            # r-ra-hii-m
+
+
+def mouth_track(phones: list, lead: int, tail: int) -> list:
+    """Per-frame (jaw, width). Shapes blend into each other (coarticulation), but a lip closure is
+    held exactly for its full length, because a b or m that never closes is the most visible error."""
+    steps = [("rest", lead)] + list(phones) + [("rest", tail)]
+    raw = [v for v, n in steps for _ in range(n)]
+    tgt = [VISEMES[v] for v in raw]
+    out = []
+    for i in range(len(tgt)):
+        if raw[i] == "closed":
+            out.append(tgt[i])
+            continue
+        lo, hi = max(0, i - 1), min(len(tgt) - 1, i + 1)
+        w = [(lo, 0.25), (i, 0.5), (hi, 0.25)]
+        out.append((sum(tgt[j][0] * k for j, k in w), sum(tgt[j][1] * k for j, k in w)))
+    shut = VISEMES["closed"]
+    mix = lambda p_, q_, k: (p_[0] + (q_[0] - p_[0]) * k, p_[1] + (q_[1] - p_[1]) * k)
+    for i in range(len(out)):          # lips part and meet over a few frames, never in one
+        if raw[i] == "closed":
+            continue
+        since = next((d for d in (1, 2) if i - d >= 0 and raw[i - d] == "closed"), None)
+        until = next((d for d in (1, 2) if i + d < len(raw) and raw[i + d] == "closed"), None)
+        if since:
+            out[i] = mix(shut, out[i], 0.5 if since == 1 else 0.85)
+        if until:
+            out[i] = mix(out[i], shut, 0.45 if until == 1 else 0.12)
+    out[0] = out[-1] = VISEMES["rest"]
+    return out
+
+
+def speak(rm: dict, style: str, phones: list | None = None, name: str = "speak") -> dict:
+    """A talking shot: lip-sync from a viseme list, with the body alive underneath
+    (breathing, small head nods on the long vowels, a light hand gesture, blinks)."""
+    phones = phones or BASMALA
+    lead, tail = 10, 14
+    track = mouth_track(phones, lead, tail)
+    n = len(track)
+    m = rm["mouth"]
+    stress, t = [], lead                                        # frame at the middle of each long vowel
+    for v, k in phones:
+        if v in ("aa",) or (v == "i" and k >= 6):
+            stress.append(t + k / 2)
+        t += k
+    arm = rm["arms"][rm.get("wave_arm", "r")]
+    other = rm["arms"]["l" if rm.get("wave_arm", "r") == "r" else "r"]
+    sg = arm["sign"]
+    keys = []
+    for f in range(n):
+        jaw, wide = track[f]
+        talk = smooth(lead - 6, lead + 4, f) * (1 - smooth(n - tail - 2, n - 4, f))    # 1 while speaking
+        br = 1.6 * math.sin(TAU * f / 48)
+        nod = sum(bell(f, c - 1, 3.0) for c in stress)                                 # dips into each stressed vowel
+        tilt = sum(bell(f, c - 1, 3.5) * (1 if i % 2 == 0 else -1) for i, c in enumerate(stress))   # each nod leans its own way, eased
+        lean = 0.5 * math.sin(TAU * f / 48 + 1) + sg * 0.8 * talk
+        pose = {"root": [0, round(br + 1.5 * nod, 2)], rm["torso"]: round(lean, 2),
+                rm["head"]: round(-sg * 1.5 * talk + 1.3 * tilt, 2)}
+        lock_legs(pose, rm, lean, br + 1.5 * nod, 0, {})
+        for i, a_name in enumerate(rm.get("antennae", [])):
+            pose[a_name] = round(2.0 * math.sin(TAU * (f - 8) / 48 + (0 if i == 0 else 0.6))
+                                 + 3.0 * sum(bell(f, c + 3, 3.0) for c in stress) * (1 if i == 0 else -1), 2)
+        g = talk * (1 + 0.25 * math.sin(TAU * (f - 2) / 30))                           # a small open-hand gesture
+        pose[arm["upper"]] = round(sg * (1 + 9 * g), 2)
+        pose[arm["fore"]] = round(sg * (2 + 26 * smooth(lead - 4, lead + 8, f) * (1 - smooth(n - tail, n - 2, f))
+                                        + 4 * math.sin(TAU * (f - 4) / 30) * talk), 2)
+        pose[arm["hand"]] = round(sg * (1 + 12 * smooth(lead - 2, lead + 10, f) * (1 - smooth(n - tail + 2, n - 1, f))), 2)
+        pose[other["upper"]] = round(other["sign"] * (1 + 2 * talk), 2)
+        pose[other["fore"]] = round(other["sign"] * (2 + 5 * talk), 2)
+        pose[other["hand"]] = round(other["sign"] * (1 + 2 * talk), 2)
+        pose[f"{m['jaw']}@scale"] = [round(wide, 3), round(jaw, 3)]
+        pose[f"{m['inside']}@scale"] = [round(wide, 3), round(jaw, 3)]
+        pose[f"{m['top']}@scale"] = [round(wide, 3), 1]
+        keys.append([f + 1, pose])
+    shot = {"name": name, "frames": n, "keys": keys, "render": "all"}
+    return add_blinks(shot, rm, [3, n - 9])
+
+
 def main(argv: list[str]) -> int:
     style = "kid"
     if "--style" in argv:
@@ -180,6 +303,11 @@ def main(argv: list[str]) -> int:
     rm = json.loads(Path(argv[0]).read_text(encoding="utf-8"))
     base = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
     made = [walk(rm, style), wave(rm, style), idle(rm, style)]
+    if rm.get("eyes"):                       # blinks: never on the walk loop (it repeats too often)
+        add_blinks(made[1], rm, [6, 40])
+        add_blinks(made[2], rm, [30])
+    if rm.get("mouth"):
+        made.append(speak(rm, style))
     names = {s["name"] for s in made}
     base["shots"] = [s for s in base.get("shots", []) if s["name"] not in names] + made
     Path(argv[2]).write_text(json.dumps(base), encoding="utf-8")

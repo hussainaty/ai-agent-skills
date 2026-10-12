@@ -142,6 +142,18 @@ class EdgeQualityTests(unittest.TestCase):
         good = frame("good.png", lambda d: None)
         island = frame("island.png", lambda d: d.rectangle([2, 2, 6, 6], fill=(10, 40, 60, 255)))
         bare = frame("bare.png", lambda d: d.rectangle([40, 30, 75, 50], fill=(100, 200, 230, 255)))   # un-inked slab
+        def hole(d):                                   # a real, fully transparent gap inside the figure
+            d.rectangle([38, 38, 41, 41], fill=(0, 0, 0, 0))
+        def soft(d):                                   # half-covered pixels where two outlines meet
+            d.rectangle([38, 38, 41, 41], fill=(10, 40, 60, 70))
+        pin = frame("pin.png", hole)
+        edge = frame("edge.png", soft)
+        r = subprocess.run([sys.executable, str(check), rest, pin], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 1, "an open pinhole must fail")
+        r = subprocess.run([sys.executable, str(check), rest, edge], capture_output=True, text=True)
+        self.assertEqual(json.loads(r.stdout)["posed"][0]["pinholes"], [], "half-covered edge pixels are not a pinhole")
+        r = subprocess.run([sys.executable, str(check), rest, pin], capture_output=True, text=True)
+        self.assertEqual(len(json.loads(r.stdout)["posed"][0]["pinholes"]), 1)
         ok = subprocess.run([sys.executable, str(check), rest, good], capture_output=True, text=True)
         self.assertEqual(ok.returncode, 0, ok.stdout)
         for bad in (island, bare):

@@ -82,6 +82,23 @@ seam at all. Use it for limbs; keep rigid planes for heads, bodies and props.
 Optional "alt_layers" + "alt_above_deg" give the skin a second look that
 cross-fades in above that angle of its first joint (the drawing swap).
 
+"line_only": true (or a paper luma, e.g. 250) keeps only the drawn line of a
+part: lighter pixels become transparent, darker ones the outline colour. Use
+it for a line that is scaled or moved over other art (a lower lip), so it
+carries no patch of paper with it. On "complete", "soft": false keeps the
+fill fully opaque to its edge (use it under parts that sit inside a body,
+such as eyes and a mouth), and "min_luma" sets which pixels may seed the fill.
+
+"paint": {"polys": [...], "color": [r, g, b]} is the only op that invents
+pixels: a flat fill (default: the outline colour), written only where a part
+in front hides it at rest. Use it for something the drawing does not contain
+and a moving part must reveal, such as the dark inside of a mouth behind the
+lips. Say in the delivery notes that it is synthetic. With "anywhere": true
+the fill is not limited to hidden pixels; pair it with the part's
+"rest_scale": [sx, sy], which the rig applies as the part's size at rest. Paint
+the shape at its largest and let the rig shrink it, because shrinking a
+raster stays smooth and stretching it shows steps.
+
 "defringe" (default true) removes the page-colour matte from outline rim
 pixels: a rim pixel that was blended with the background becomes the outline
 colour with partial alpha. Without it, a part moved over another part shows a
@@ -155,6 +172,25 @@ def coverage(size, draw_fn) -> Image.Image:
     big = Image.new("L", (w * SS, h * SS), 0)
     draw_fn(ImageDraw.Draw(big), SS)
     return big.resize((w, h), Image.BOX)
+
+
+def bleed_rgb(img: Image.Image, radius: int = 3) -> Image.Image:
+    """Extend each part's colours into its transparent surroundings (alpha unchanged).
+
+    Transparent pixels are stored as black. A renderer that filters straight-alpha
+    textures blends that black into the part's edge, which shows as a thin grey line
+    wherever a light part sits on a light part. With the colours extended, the edge
+    blends with its own colour instead.
+    """
+    under = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    solid = Image.merge("RGBA", (*img.split()[:3], img.getchannel("A").point(lambda v: 255 if v > 0 else 0)))
+    for r in range(radius, 0, -1):                       # far first, near last: nearest colour wins
+        for dx, dy in ((r, 0), (-r, 0), (0, r), (0, -r), (r, r), (-r, -r), (r, -r), (-r, r)):
+            shifted = Image.new("RGBA", img.size, (0, 0, 0, 0))
+            shifted.paste(solid, (dx, dy))
+            under.alpha_composite(shifted)
+    under.alpha_composite(solid)
+    return Image.merge("RGBA", (*under.split()[:3], img.getchannel("A")))
 
 
 def main(spec_path: str, out_dir: str) -> int:
@@ -338,7 +374,15 @@ def main(spec_path: str, out_dir: str) -> int:
             if comp and comp.get("polys"):
                 sil = coverage((w, h), lambda d, k: [d.polygon([(px_ * k, py_ * k) for px_, py_ in poly], fill=255)
                                                      for poly in comp["polys"]]).load()
-                todo = {(x, y) for y in range(h) for x in range(w) if sil[x, y] and lp[x, y][3] == 0 and hidden(x, y)}
+                grow = comp.get("grow", 0)   # also fill hidden pixels this close to the silhouette: no ring of holes at its edge
+
+                def in_sil(x, y):
+                    if sil[x, y]:
+                        return True
+                    return any(0 <= x + dx < w and 0 <= y + dy < h and sil[x + dx, y + dy]
+                               for dx in range(-grow, grow + 1) for dy in range(-grow, grow + 1))
+
+                todo = {(x, y) for y in range(h) for x in range(w) if lp[x, y][3] == 0 and hidden(x, y) and in_sil(x, y)}
                 filled = set(todo)
                 while todo:  # diffuse body colour only (outline pixels excluded, so nothing smears)
                     ready = []
@@ -366,7 +410,7 @@ def main(spec_path: str, out_dir: str) -> int:
                     for x, y, c in upd:
                         lp[x, y] = c
                 for x, y in filled:                                     # soft silhouette edge
-                    if lp[x, y][3] and sil[x, y] < 255:
+                    if comp.get("soft", True) and lp[x, y][3] and sil[x, y] < 255:
                         lp[x, y] = lp[x, y][:3] + (sil[x, y],)
                 lw = comp.get("line_width", 3)
                 stroke = coverage((w, h), lambda d, k: [d.line([(px_ * k, py_ * k) for px_, py_ in edge], fill=255,
@@ -393,12 +437,30 @@ def main(spec_path: str, out_dir: str) -> int:
                                 lp[x, y] = (round(ink[0] * f + r * (1 - f)), round(ink[1] * f + g * (1 - f)),
                                             round(ink[2] * f + b * (1 - f)), max(a, cv))
 
-            layer.save(out / f"{save_name}.png")
+            if part.get("line_only"):   # keep only the drawn line: paper-coloured pixels become transparent
+                paper = luma(bg_rgb) if part["line_only"] is True else part["line_only"]
+                li_ = luma(ink)
+                for y in range(h):
+                    for x in range(w):
+                        if lp[x, y][3]:
+                            a_ = max(0.0, min(1.0, (paper - luma(lp[x, y])) / max(paper - li_, 1)))
+                            lp[x, y] = tuple(ink) + (round(a_ * lp[x, y][3]),)
+            paint = part.get("paint")
+            if paint:   # the one place new pixels are invented: a flat fill that something in front hides at rest
+                col = tuple(paint["color"]) if isinstance(paint.get("color"), list) else tuple(ink)
+                cov = coverage((w, h), lambda d, k: [d.polygon([(px_ * k, py_ * k) for px_, py_ in poly], fill=255)
+                                                     for poly in paint["polys"]]).load()
+                for y in range(h):
+                    for x in range(w):
+                        if cov[x, y] and (paint.get("anywhere") or hidden(x, y)):
+                            lp[x, y] = col + (cov[x, y],)
+            bleed_rgb(layer).save(out / f"{save_name}.png")
         part = base_part
         und = part.get("underlay")
         if und:   # patch articulation: an ink strip that follows this part but sits BEHIND its neighbour
             base_img = Image.open(out / f"{part['name']}.png").load()
             g = und.get("grow", 2)
+            clear = und.get("clear", 2)    # how far the patch stays from soft rim pixels (it shows through them)
             patch = Image.new("RGBA", (w, h), (0, 0, 0, 0))
             pp = patch.load()
             n_under = 0
@@ -409,12 +471,22 @@ def main(spec_path: str, out_dir: str) -> int:
                         continue          # keep only what something in front hides at rest: the rest pose cannot change
                     if any(not (0 <= x + dx < w and 0 <= y + dy < h) or owner[y + dy][x + dx] < 0
                            or z_of(owner[y + dy][x + dx]) <= und["z"]
-                           for dx in (-2, 0, 2) for dy in (-2, 0, 2)):
+                           for dx in (-clear, 0, clear) for dy in (-clear, 0, clear)):
                         continue          # stay clear of soft rim pixels, which would let the patch show through
                     if any(0 <= x + dx < w and 0 <= y + dy < h and base_img[x + dx, y + dy][3] > 128
                            for dx in range(-g, g + 1) for dy in range(-g, g + 1) if dx * dx + dy * dy <= g * g + 1):
                         pp[x, y] = tuple(ink) + (255,)
                         n_under += 1
+            ub = und.get("bleed", 0)          # also cover hairlines of page colour this close to the patch
+            if ub:
+                add = [(x, y) for y in range(h) for x in range(w)
+                       if bg[y][x] and not pp[x, y][3] and any(
+                           0 <= x + dx < w and 0 <= y + dy < h and pp[x + dx, y + dy][3]
+                           for dx in range(-ub, ub + 1) for dy in range(-ub, ub + 1))
+                       and sum(1 for dx in (-3, 0, 3) for dy in (-3, 0, 3)
+                               if 0 <= x + dx < w and 0 <= y + dy < h and not bg[y + dy][x + dx]) >= 5]
+                for x, y in add:               # only slivers enclosed by the figure, never open background
+                    pp[x, y] = tuple(ink) + (255,)
             from PIL import ImageFilter                              # smooth the outline: drop spikes thinner than 3 px
             alpha = patch.getchannel("A").filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
             alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
@@ -426,7 +498,7 @@ def main(spec_path: str, out_dir: str) -> int:
                         pp[x, y] = (0, 0, 0, 0)
                     elif pp[x, y][3]:
                         n_under += 1
-            patch.save(out / f"{part['name']}__under.png")
+            bleed_rgb(patch).save(out / f"{part['name']}__under.png")
             rig["parts"].append({"name": part["name"] + "__under", "pivot": part["pivot"], "parent": part["name"],
                                  "z": und["z"], "pixels": n_under, "follows_base_of": part["name"]})
         t = TINTS[i % len(TINTS)]
@@ -435,7 +507,7 @@ def main(spec_path: str, out_dir: str) -> int:
                 if owner[y][x] == i:
                     r, g, b, a = rv[x, y]
                     rv[x, y] = ((r + t[0]) // 2, (g + t[1]) // 2, (b + t[2]) // 2, 255)
-        entry = {k: part[k] for k in ("name", "pivot", "parent", "z") if k in part} | {"pixels": count}
+        entry = {k: part[k] for k in ("name", "pivot", "parent", "z", "rest_scale") if k in part} | {"pixels": count}
         if part.get("alt"):
             entry["alt_above_deg"] = part["alt"]["above_deg"]
         rig["parts"].append(entry)
@@ -444,12 +516,12 @@ def main(spec_path: str, out_dir: str) -> int:
         img_s = Image.new("RGBA", (w, h), (0, 0, 0, 0))
         for layer_name in skin["layers"]:
             img_s.alpha_composite(Image.open(out / f"{layer_name}.png"))
-        img_s.save(out / f"{skin['name']}__skin.png")
+        bleed_rgb(img_s).save(out / f"{skin['name']}__skin.png")
         if skin.get("alt_layers"):         # a second look for raised angles (drawing swap on the skin)
             img_a = Image.new("RGBA", (w, h), (0, 0, 0, 0))
             for layer_name in skin["alt_layers"]:
                 img_a.alpha_composite(Image.open(out / f"{layer_name}.png"))
-            img_a.save(out / f"{skin['name']}__skin_alt.png")
+            bleed_rgb(img_a).save(out / f"{skin['name']}__skin_alt.png")
             bb_a, bb_s = img_a.getbbox(), img_s.getbbox()
             img_s_bbox = [min(bb_a[0], bb_s[0]), min(bb_a[1], bb_s[1]), max(bb_a[2], bb_s[2]), max(bb_a[3], bb_s[3])]
         else:

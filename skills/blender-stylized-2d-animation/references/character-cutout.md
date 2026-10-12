@@ -14,6 +14,10 @@ not to draw a new character that looks similar.
 - Hidden parts
 - Motion rules
 - Gates and numbers
+- Lessons from independent review
+- Limbs with bones (skins)
+- Faces: blinking and speaking
+- Practices borrowed from other animation skills
 - What one drawing cannot give you
 - Sources
 
@@ -293,6 +297,56 @@ animation drives rigid parts and skins, so motion data does not change.
 - For a soft character with an artist's layered file, weight the whole limb
   by hand in Blender (or use Spine or Live2D) instead of this two-bone blend.
 
+## Faces: blinking and speaking
+
+Eyes and a mouth can be cut from the same flat drawing.
+
+**Eyes.** Each eye (outline, iris, highlights) is its own part with the
+pivot at its centre. A blink scales it vertically (`"eye_l@scale": [1, 0.1]`):
+closed in 2 frames, held for 1, open again over 3. The head's `complete` op
+fills the socket behind it; use `"soft": false`, `"grow": 2` and a high
+`min_luma` so the fill is opaque to its edge and seeded only by clean skin.
+A squashed eye is a stand-in for a drawn eyelid. It reads at speed, but ask
+the artist for a closed-eye drawing when the blink must hold.
+
+**Mouth.** Split a closed smile into three layers:
+
+| Layer | Content | Motion |
+|---|---|---|
+| upper lip (`lip_top`) | upper line, the teeth wedge, the skin just above | never moves vertically |
+| lower lip (`jaw`, `line_only`) | the lower line only | scales vertically about the mouth corners |
+| interior (`mouth_in`, `paint`) | a flat dark fill; the one synthetic element | scales with the lower lip |
+
+Put the cut just above the lower line. Paint the interior at its fully open
+size with `"anywhere": true` and give the part `rest_scale` so it shrinks to
+exactly the hidden area at rest: shrinking a raster stays smooth, stretching
+shows steps. The lower lip scales about the corners, so the corners stay put
+and the middle drops, as a jaw does.
+
+**Bleed the colours.** Light parts on a light face showed a thin grey box
+and rings. Transparent pixels are stored as black, and a renderer that filters
+straight-alpha textures blends that black into each part's edge. The cutter
+now extends every part's colours outward under its transparent surroundings
+(`bleed_rgb`), which removed them.
+
+**Lip-sync.** `cutout_motion.py` takes a list of mouth shapes (visemes) with
+frame counts and builds the track. The rules it encodes:
+
+- Only sounds made at the lips and teeth are visible. Sounds from the back
+  of the mouth and throat take the shape of the vowel beside them. (For
+  Arabic: ب and م close the lips; ح and هـ show as their vowel.)
+- A lip closure is held for at least 3 frames and is never softened by
+  blending. A ب or م that does not close is the most visible lip-sync error.
+- Lips part and meet over two or three frames. A test caught a one-frame
+  snap from shut to fully open and it was fixed by easing the release.
+- Vowels set the opening: widest on a long ā, narrow and spread on i.
+- The body keeps moving under the speech: breathing, a small head dip into
+  each long vowel, a light hand gesture, blinks.
+
+The built-in phrase is the basmala, "bismi llāhi r-raḥmāni r-raḥīm", as 24
+shapes over about 3.5 seconds. Add another phrase as a list of
+`(shape, frames)` pairs.
+
 ## Practices borrowed from other animation skills
 
 - **Contact sheet and frame-difference report**
@@ -340,5 +394,7 @@ animation drives rigid parts and skins, so motion data does not change.
 - Toon Boom Harmony patch articulation (a colour-fill layer that covers joint lines):
   https://docs.toonboom.com/help/harmony-12-2/advanced/rigging/patch-articulation.html
 - Spine meshes and weights (a limb as one skinned mesh): https://en.esotericsoftware.com/spine-in-depth
+- Which Arabic sounds are visible on the face (lips and teeth are; back and throat consonants are not), Ouni et al.,
+  "Visual speech intelligibility in Arabic", Interspeech 2007: https://www.isca-archive.org/interspeech_2007/ouni07_interspeech.pdf
 - Why generated characters drift (no identity memory between generations):
   https://getimg.ai/blog/how-to-create-consistent-characters-with-ai

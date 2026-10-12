@@ -8,8 +8,9 @@ shot can be checked. For each transparent-background render it measures:
 
 - islands: detached fragments (groups of opaque pixels apart from the main
   figure, 4 px or larger). A clean rig has none.
-- pinholes: small enclosed gaps (3 to 60 px of background fully surrounded
-  by the figure). A joint that opens when it bends shows up as one.
+- pinholes: small enclosed gaps (3 to 60 px surrounded by the figure, with at
+  least one pixel that is really transparent). A joint that opens when it
+  bends shows up as one; half-covered pixels where two outlines meet do not.
 - un-inked edge %: silhouette pixels with no dark outline within 3 px
   inward. Line art has an outline almost everywhere, so a cut edge exposed
   by a moving joint shows as a rise over the rest pose.
@@ -52,8 +53,10 @@ def analyse(path: str) -> dict:
     solid = [[px[x, y][3] > 96 for x in range(w)] for y in range(h)]
     comps = sorted(components(solid, w, h, True), key=lambda c: -len(c[0]))
     islands = [{"size": len(c[0]), "at": c[0][0]} for c in comps[1:] if len(c[0]) >= 4]
+    # A pinhole is a small enclosed gap that is really open: at least one pixel must be (nearly) fully
+    # transparent. A few half-covered pixels where two anti-aliased outlines converge are an edge, not a hole.
     pinholes = [{"size": len(pts), "at": pts[0]} for pts, border in components(solid, w, h, False)
-                if not border and 3 <= len(pts) <= 60]
+                if not border and 3 <= len(pts) <= 60 and min(px[x, y][3] for x, y in pts) < 40]
     luma = lambda c: (c[0] * 299 + c[1] * 587 + c[2] * 114) // 1000
     edge = bare = 0
     spots = {}

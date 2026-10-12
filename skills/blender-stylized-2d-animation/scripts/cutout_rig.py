@@ -19,6 +19,8 @@ ANIM.json:
   ]
 }
 
+A pose may also scale a part about its pivot: {"eye_l@scale": [1, 0.1]}
+(a blink squashes the eye; a jaw scales the lower lip to open the mouth).
 A pose may also move a part: {"thigh_l@move": [0, -12]} slides the part in
 pixels (screen down = +y), e.g. lifting a leg whose hidden top was rebuilt.
 Parts with "alt_above_deg" in rig.json (from the cutter's "alt") have two
@@ -238,19 +240,22 @@ def build(parts_dir: Path, pad=(0, 0, 0, 0)):
 
 
 def pose_values(pose: dict, limits: dict, report: list, shot: str, frame: int):
-    rot, move = {}, {}
+    rot, move, scale = {}, {}, {}
     for k, v in pose.items():
         if k == "root":
             continue
         if k.endswith("@move"):
             move[k[:-5]] = v
             continue
+        if k.endswith("@scale"):
+            scale[k[:-6]] = v
+            continue
         lo, hi = limits.get(k, [-360, 360])
         if not lo <= v <= hi:
             report.append({"shot": shot, "frame": frame, "joint": k, "asked": v, "clamped_to": max(lo, min(hi, v))})
             v = max(lo, min(hi, v))
         rot[k] = v
-    return rot, move, pose.get("root", [0, 0])
+    return rot, move, pose.get("root", [0, 0]), scale
 
 
 def main():
@@ -263,12 +268,15 @@ def main():
     fade = anim.get("swap_fade_deg", 6)                     # the swap blends over +/- this many degrees
     report = []
     base = {n: tuple(e.location) for n, e in empties.items()}
+    rest_scale = {p["name"]: tuple(p["rest_scale"]) for p in rig["parts"] if "rest_scale" in p}
+    for n, (bsx, bsy) in rest_scale.items():
+        empties[n].scale = (bsx, bsy, 1)
     for shot in anim["shots"]:
         for e in empties.values():
             e.animation_data_clear()
         for frame, pose_ref in shot["keys"]:
             pose = anim["poses"][pose_ref] if isinstance(pose_ref, str) else pose_ref
-            rot, move, root_off = pose_values(pose, limits, report, shot["name"], frame)
+            rot, move, root_off, scale = pose_values(pose, limits, report, shot["name"], frame)
             for n, e in empties.items():
                 e.rotation_euler = (0, 0, math.radians(rot.get(n, 0)))
                 bx, by, bz = base[n]
@@ -277,8 +285,12 @@ def main():
                     dx += root_off[0]
                     dy += root_off[1]
                 e.location = (bx + dx * S, by - dy * S, bz)
+                sx_, sy_ = scale.get(n, [1, 1])
+                bsx, bsy = rest_scale.get(n, (1, 1))          # a part painted larger than it rests
+                e.scale = (sx_ * bsx, sy_ * bsy, 1)
                 e.keyframe_insert("rotation_euler", frame=frame)
                 e.keyframe_insert("location", frame=frame)
+                e.keyframe_insert("scale", frame=frame)
         sc.frame_start, sc.frame_end = 1, shot["frames"]
         frames = range(1, shot["frames"] + 1) if shot.get("render") == "all" else shot.get("render", [1])
         for f in frames:
