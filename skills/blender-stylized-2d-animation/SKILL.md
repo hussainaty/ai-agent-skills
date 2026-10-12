@@ -1,6 +1,6 @@
 ---
 name: blender-stylized-2d-animation
-description: Build and animate stylized "2D-look" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender, and animate EXISTING 2D character art without losing detail by cutting the original drawing into jointed parts (cut-out rig) instead of redrawing it. Covers flat colour bands, inverted-hull outlines, boil on twos, procedural fire, Geometry Nodes bubbles, joint pivots and limits, walk cycles with foot lock, and per-part review gates. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or wants an existing character posed, animated, or turned into a sprite set. Not for photoreal rendering.
+description: Build and animate stylized "2D-look" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender, and animate EXISTING 2D character art without losing detail by cutting the original drawing into jointed parts (cut-out rig) instead of redrawing it. Covers flat colour bands, inverted-hull outlines, boil on twos, procedural fire, Geometry Nodes bubbles, joint pivots and limits, walk cycles with foot lock, bone-bent limbs, blinking, lip-sync from mouth shapes, and per-frame review gates. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or wants an existing character posed, animated, or turned into a sprite set. Not for photoreal rendering.
 metadata:
   short-description: Toon/2D-look Blender scenes and boil animation via MCP
 ---
@@ -45,7 +45,10 @@ work is divided, seen, then added up:
 5. Bend limbs with bones where seams matter: a `skins` entry turns an arm or
    leg into one flexible sheet bent by an armature, so the bent joint has no
    seam. Review every shot with `scripts/contact_sheet.py` before accepting it.
-6. Views or hand shapes the artist never drew are new drawings: ask for
+6. Faces: eyes become parts that squash for a blink; a closed smile splits into
+   upper lip, lower lip and a painted interior for speech. `cutout_motion.py`
+   builds lip-sync from a list of mouth shapes (the Arabic basmala is built in).
+7. Views or hand shapes the artist never drew are new drawings: ask for
    them, and never invent them during animation.
 
 ```
