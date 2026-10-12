@@ -86,6 +86,21 @@ class CutoutTests(unittest.TestCase):
         rig = json.loads((self.tmp / "out" / "rig.json").read_text())
         self.assertEqual(next(p for p in rig["parts"] if p["name"] == "rod")["alt_above_deg"], 20)
 
+    def test_underlay_patch_is_hidden_at_rest(self):
+        sp = spec()
+        sp["parts"][1]["underlay"] = {"z": 0.5, "grow": 2}      # behind the rod (z 1) and the body (z 2)
+        self.assertEqual(run(self.tmp, sp).returncode, 0)
+        patch = Image.open(self.tmp / "out" / "rod__under.png")
+        self.assertIsNotNone(patch.getbbox(), "a patch is written")
+        rest = Image.new("RGBA", (120, 160), BG + (255,))
+        for n in ("rod__under", "rod", "body"):                 # back to front
+            rest.alpha_composite(Image.open(self.tmp / "out" / f"{n}.png"))
+        diff = ImageChops.difference(rest.convert("RGB"), Image.open(self.tmp / "fig.png").convert("RGB"))
+        self.assertLess(max(diff.getextrema()[i][1] for i in range(3)), 12, "the patch must not show in the rest pose")
+        rig = json.loads((self.tmp / "out" / "rig.json").read_text())
+        under = next(p for p in rig["parts"] if p["name"] == "rod__under")
+        self.assertEqual((under["parent"], under["z"]), ("rod", 0.5))
+
     def test_unassigned_pixels_fail_the_gate(self):
         sp = spec()
         sp["parts"][1]["poly"] = [[45, 92], [72, 92], [72, 120], [45, 120]]   # rod polygon too short

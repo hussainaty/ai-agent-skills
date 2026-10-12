@@ -109,7 +109,38 @@ pixels only show when a joint moves.
 | A cut ran along a rod's edge and took its outline, or the rod's end is hidden | `rod` (rebuild from a clean cross-section, scaled to the measured taper, bilinear; rounded inked tip; visible pixels kept) | upper-arm rods that touched the torso |
 | A body edge under a limb | `complete` (silhouette polygons filled with smoothed body colour, then the measured contour inked, both anti-aliased) | torso sides under the arms |
 | The top of a ball joint under another piece | `complete` with `radial` (hidden pixels take the ball's own colour-by-radius profile) | elbow balls under the rod tips |
+| A hairline opens between two outlines as a part lifts off its neighbour | `underlay` (a patch: the part's silhouette grown 2 px, in outline colour, attached to the part but layered behind the neighbour) | upper arms against the torso |
 | No single image is right both at rest and when raised | `alt` (a second drawing of the part; the rig swaps it in above an angle) | an upper arm whose top carries part of the shoulder drawing |
+
+**This is the studio "patch".** Toon Boom Harmony hides joint lines with a
+patch articulation: a colour-fill layer that covers the joint, so the line
+between two pieces never shows. `complete`, `radial` and the hidden rod ends
+do the same job here: whatever a moving joint uncovers is already painted in
+the piece behind it.
+
+**Do not chase hairlines by nudging edges.** Moving a rebuilt edge by a
+pixel closed a gap on one frame and opened one lower down on another: as a
+limb lifts off the body, a thin gap must open somewhere. The `underlay`
+patch fixes the cause. It took the every-frame gate from 15 failing frames
+of 118 to the last few pixels, without changing the rest pose. Keep the
+patch 2 px clear of soft rim pixels, or it shows through at rest (the
+rest-pose gate caught this: 37.5 dB fell to 34.0).
+
+**Cut where the drawing's own lines are.** An antenna stem that flows into a
+helmet has the helmet's rim lines crossing its base. A flat cut across the
+stem took rim pixels with the antenna and left a notch when it tilted. The
+cut belongs just above the first rim line, so the helmet keeps its whole rim
+and the stem tucks behind it.
+
+**Never sample past a clean cross-section.** A rod rebuild that read one
+pixel beyond the source's edge picked up a neighbour's stray fragment and
+printed it as a dotted trail along the whole rod. `rod` now clamps to the
+cross-section and clears anything beyond it.
+
+**Leave no limb pixel in the wrong piece.** A cut that is a pixel or two
+tight at a rod tip leaves rod-coloured pixels in the next piece; they travel
+with it and show as a pale wedge when the joint bends. Cut tips a few pixels
+generous, and let the piece behind be completed underneath.
 
 **Remove the page matte.** Outline rim pixels in a flattened image are
 blended with the page colour. Over the page that is invisible; over another
@@ -123,7 +154,8 @@ shading. It belongs there at rest and reads as a streak when the arm is
 raised. Rebuilding it made the rest pose wrong (a "pipe" look); keeping it
 left the streak. Cut-out animators keep two drawings and switch. The `alt`
 op writes `<name>__alt.png`, and the rig shows it while the joint is more
-than `above_deg` from rest (20° here). Once a part has a swap, leave its
+than `above_deg` from rest (20° here), cross-fading over ±6° so the
+change never pops. Once a part has a swap, leave its
 first drawing as the artist's untouched pixels (plus the tip hidden under
 the cap, and a trim of stray neighbour pixels). Re-inking it as well put a
 hatched patch on the low-angle arm; removing that work raised the rest-pose
@@ -190,7 +222,7 @@ with default interpolation look mechanical.
 | Rest reassembly | PSNR ≥ 35 dB; every inventory item matches at zoom | `cutout_rig.py` + diff |
 | Joints | No gaps, stubs, or smears at the limits; bad poses clamped | joint stress sheet, `report.json` |
 | Feet | Standing-foot drift ≤ 3 px per step, vertical and horizontal | lowest opaque pixel and its x-centre per frame |
-| Posed edges | No detached fragments; un-inked silhouette edge no more than 1.5 points above the rest pose | `scripts/cutout_check.py REST.png POSED...` |
+| Posed edges, every frame | No detached fragments; no new pinholes (small enclosed gaps at a joint); un-inked silhouette edge no more than 1.5 points above the rest pose | `scripts/cutout_check.py REST.png "renders/*.png" --summary` |
 | Posed joints, by eye | 3x zooms of every joint in the most extreme delivered frames, and the frames at 1x | zoom sheet; an independent reviewer |
 | Poses | Close to any artist-drawn version of the same pose | side-by-side sheet |
 
@@ -231,6 +263,51 @@ they found:
 - **Judge motion as motion.** Stills and parameters cannot show whether a
   swing reads. Deliver a GIF or MP4 and have it watched.
 
+## Limbs with bones (skins)
+
+Rigid pieces always have a seam at each joint, and every seam needs a repair.
+A limb can instead be one flexible sheet bent by bones, which has no seam at
+the bent joint at all. Add a top-level `skins` entry to the spec:
+
+```json
+"skins": [{"name": "arm_r",
+           "layers": ["forearm_r", "upper_arm_r"],
+           "alt_layers": ["forearm_r", "upper_arm_r__alt"], "alt_above_deg": 13,
+           "joints": ["upper_arm_r", "forearm_r"], "z": 8, "blend": 10}]
+```
+
+The cutter flattens the listed part images (back to front) into one image.
+The rig draws it on a fine grid mesh with an armature: each bone copies its
+joint's transform, and the weights blend from the first joint to the second
+across ±`blend` pixels around the second joint's pivot. The same joint
+animation drives rigid parts and skins, so motion data does not change.
+
+- Still cut and repair the parts first. The skin is built from them, so the
+  rod tip, the completed ball and the clean alt drawing all carry over.
+- Keep the drawing swap on the skin (`alt_layers`). A skin made only from the
+  clean raised drawing dropped the rest-pose match from 35.8 to 32.8 dB.
+- Keep hands, heads and bodies as rigid planes. A hand hangs from the wrist
+  joint as before; the wrist ball covers the join.
+- On the reference robot this removed every chip and wedge at the elbows,
+  including in the extreme stress pose, and the every-frame gate passed.
+- For a soft character with an artist's layered file, weight the whole limb
+  by hand in Blender (or use Spine or Live2D) instead of this two-bone blend.
+
+## Practices borrowed from other animation skills
+
+- **Contact sheet and frame-difference report**
+  (`scripts/contact_sheet.py "renders/walk_*.png" sheet.png`), after
+  cc-blender-skill's animation quality gate: no shot is accepted without one.
+  A spike between two frames is a pop; a loop is clean when the last-to-first
+  change is close to its neighbours.
+- **Variants for a person to choose.** No instrument grades whether motion
+  feels right (rig-c makes this explicit with a vote). When timing or
+  amplitude is a judgment call, render two or three variants (for example
+  `--style kid` and `--style adult`) and let the person pick.
+- **Separate eyes and mouth** (OpenMontage's rigging checklist): pupils and
+  lids as their own parts when the gaze or a blink must change; mouth shapes
+  as separate drawings.
+
 ## What one drawing cannot give you
 
 - **New views** (profile, back, three-quarter): these need the artist's
@@ -260,5 +337,8 @@ they found:
   https://brianlemay.com/Pages/animationschool/animation/1stsemesteranimation/10armswing/10armswing.html
 - Children move with a faster cadence than adults (gait features):
   https://init.cise.ufl.edu/?p=2542
+- Toon Boom Harmony patch articulation (a colour-fill layer that covers joint lines):
+  https://docs.toonboom.com/help/harmony-12-2/advanced/rigging/patch-articulation.html
+- Spine meshes and weights (a limb as one skinned mesh): https://en.esotericsoftware.com/spine-in-depth
 - Why generated characters drift (no identity memory between generations):
   https://getimg.ai/blog/how-to-create-consistent-characters-with-ai

@@ -92,7 +92,8 @@ def walk(rm: dict, style: str) -> dict:
         for side, first in (("l", 0), ("r", step)):
             leg = rm["legs"][side]
             g = (f - first) % cycle
-            lift = lift_h * math.sin(math.pi * g / step) ** 1.3 if g < step else 0.0
+            u = (g / step) ** 1.25 if g < step else 0.0                       # peak a little late: quicker drop into contact
+            lift = lift_h * math.sin(math.pi * u) ** 1.2 if g < step else 0.0
             lifts[side] = lift
             k = lift / lift_h
             swing[side] = (leg["sign"] * 5.0 * k, -leg["sign"] * 5.5 * k)   # free knee swings slightly outward
@@ -111,7 +112,7 @@ def walk(rm: dict, style: str) -> dict:
             sw = lambda lag: math.sin(TAU * (f - lag) / cycle + phase)
             s2 = sw(2)                                                        # elbow breaks 2 frames after the shoulder
             pose[arm["upper"]] = round(arm["sign"] * arm_u * sw(0), 2)
-            pose[arm["fore"]] = round(arm["sign"] * (2 + arm_f * (s2 if s2 > 0 else 0.35 * s2)), 2)
+            pose[arm["fore"]] = round(arm["sign"] * (2 + arm_f * (s2 if s2 > 0 else 0.6 * s2)), 2)
             pose[arm["hand"]] = round(arm["sign"] * (arm_h * sw(4) + 2.0 * math.cos(TAU * (f - 4) / cycle + phase)), 2)
         keys.append([f + 1, pose])
     return {"name": "walk", "frames": cycle, "keys": keys, "render": "all"}
@@ -130,13 +131,14 @@ def wave(rm: dict, style: str) -> dict:
         hand = smooth(9, 19, f) - smooth(41, 48, f)                            # wrist last
         env = smooth(16, 20, f) * (1 - smooth(34, 38, f))                      # waving window
         osc = lambda lag: math.sin(TAU * (f - 18 - lag) / beat)
-        dip = 8 * bell(f, 3, 2.5) - 4 * bell(f, 13, 4) + 3 * bell(f, 44, 3) + 1.5 * env * osc(1)   # anticipation, rise, settle
-        lean = sg * (2.2 * up - 1.5 * bell(f, 3, 2.5) + 1.0 * env * osc(-2))   # the body joins in
+        ends = smooth(0, 2, f) * (1 - smooth(n - 3, n - 1, f))                  # exactly at rest on the first and last frame
+        dip = ends * (8 * bell(f, 4, 2.5) - 4 * bell(f, 13, 4) + 3 * bell(f, 43, 3)) + 1.5 * env * osc(1)   # anticipation, rise, settle
+        lean = sg * (2.2 * up - 1.5 * ends * bell(f, 4, 2.5) + 1.0 * env * osc(-2))   # the body joins in
         dx = sg * 4.0 * up                                                     # weight moves under the raised arm
         pose = {"root": [round(dx, 2), round(dip, 2)]}
         lock_legs(pose, rm, lean, dip, dx, {})
         pose[rm["torso"]] = round(lean, 2)
-        pose[arm["upper"]] = round(sg * (66 * up - 7 * bell(f, 3, 2.5) + 5 * env * osc(-1)), 2)
+        pose[arm["upper"]] = round(sg * (66 * up - 7 * ends * bell(f, 4, 2.5) + 5 * env * osc(-1)), 2)
         pose[arm["fore"]] = round(sg * (46 * fore + 8 * bell(f, 17, 2.5) + 13 * env * osc(0)), 2)   # overshoot, then wave
         pose[arm["hand"]] = round(sg * (8 * hand + 22 * env * osc(2)), 2)      # hand drags behind the forearm
         pose[other["upper"]] = round(other["sign"] * (3 * up + 1.5 * env * osc(1)), 2)   # the other arm balances

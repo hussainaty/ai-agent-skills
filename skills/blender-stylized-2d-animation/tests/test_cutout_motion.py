@@ -79,9 +79,11 @@ class MotionTests(unittest.TestCase):
             pts = [foot(k, side) for k in keys]
             self.assertLess(max(p[0] for p in pts) - min(p[0] for p in pts), 1.0)
             self.assertLess(max(p[1] for p in pts) - min(p[1] for p in pts), 1.0)
-        self.assertLess(abs(keys[-1]["upper_arm_r"]), 2)
+        self.assertLess(abs(keys[-1]["upper_arm_r"]), 0.5)
+        self.assertLess(abs(keys[0]["upper_arm_r"]), 0.5, "the wave starts exactly at rest, so it cuts cleanly from idle")
+        self.assertLess(abs(keys[0]["root"][1]), 0.5)
         self.assertGreater(max(k["upper_arm_r"] for k in keys), 55)
-        self.assertLess(min(k["upper_arm_r"] for k in keys[:6]), -3, "anticipation: the arm pulls back before it rises")
+        self.assertLess(min(k["upper_arm_r"] for k in keys[:8]), -3, "anticipation: the arm pulls back before it rises")
 
 
 if __name__ == "__main__":

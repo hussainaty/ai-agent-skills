@@ -1,6 +1,6 @@
 ---
 name: scrapegraphai-research
-description: Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Also installs, updates, and uses Agent Reach for platform content such as YouTube, GitHub, Reddit, Twitter/X, Bilibili, and RSS, including when the user pastes an Agent Reach install.md or update.md link. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.
+description: Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Also installs, updates, and uses Agent Reach for platform content such as YouTube, GitHub, Reddit, Twitter/X, Bilibili, and RSS, including when the user pastes an Agent Reach install.md or update.md link. Works without an API key through the local open-source ScrapeGraphAI library or the user's own signed-in accounts. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.
 metadata:
   short-description: Preferred web research with ScrapeGraphAI and Exa
 ---
@@ -20,12 +20,13 @@ Do not use this skill for local workspace questions, calculations, writing based
 5. Use ScrapeGraphAI **Extract** only after choosing a known source and defining a precise fact schema. Use **Crawl** only for a requester-approved site with explicit page/depth limits and a stopping condition.
 6. When ScrapeGraphAI or Exa is unavailable, or it is not the right tool, use another authorized research tool and say which route was used.
 7. For platform-native content (YouTube captions, GitHub, Reddit or Twitter/X threads, Bilibili, RSS, podcasts), use **Agent Reach** when it is installed. Treat what it returns as secondary evidence. To install or update it, follow [references/agent-reach.md](references/agent-reach.md).
+8. With no ScrapeGraph API key, use the **local open-source library**: `scripts/sgai_local.py fetch URL` reads a public page with no model and no cost; `extract` adds structured extraction with a local Ollama model or a provider key the user already has. When the user has said to use their own accounts, the ScrapeGraphAI dashboard and the Exa website may be used in their already signed-in browser session. Read [references/local-library.md](references/local-library.md) first.
 
 ## Exa browser workflow
 
 - Enter a short, focused, non-sensitive search query in Exa's public website.
 - Use results to locate candidate sources; record titles and URLs, then inspect the original sources before reporting a claim.
-- Do not sign in, create an Exa account, submit an API key, use the API, install an extension, change browser settings, buy a plan, or transmit sensitive information.
+- Do not sign in, create an Exa account, submit an API key, use the API, install an extension, change browser settings, buy a plan, or transmit sensitive information. Exception: when the user has said to use their own account, an already signed-in session in their browser may be used for searching, under the limits in [references/local-library.md](references/local-library.md).
 
 ## Access, cost, and safety
 
