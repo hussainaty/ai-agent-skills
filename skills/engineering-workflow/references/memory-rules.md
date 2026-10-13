@@ -41,7 +41,7 @@ model.
 
 | Type | Store |
 |---|---|
-| Working | `workflow/STATE.md` in the project (resume point); session context |
+| Working | `workflow/STATE.md` in the project (resume point); the working notebook (`working-context-notebook`) for exact facts between gates; session context |
 | Semantic | Agent memory files (one fact per file, with an index); the global memory map's `MEMORY.md` |
 | Episodic | One dated file per session in `sessions/` with `sessions/INDEX.md` (`session-wrap-up`); the claude-mem observation log when installed |
 | Procedural | Skills, `CLAUDE.md` / `AGENTS.md`; hooks via `hooks-create`; tests |

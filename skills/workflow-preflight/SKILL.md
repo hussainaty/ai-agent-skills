@@ -42,6 +42,22 @@ checking its routing behavior. The test cases separate trigger accuracy from
 route quality, so a broad description does not turn into indiscriminate skill
 loading.
 
+## Open the working context
+
+Every task that passes step 1 runs on the `working-context-notebook` flow. It
+is the default working flow, not a route to select, so it does not count
+toward the smallest skill set and is not named in the route line.
+
+- Open the notebook as soon as the route is stated. Put the outcome in the
+  goal and the completion evidence from step 1 in the tracker.
+- While the selected skills run, log long raw output, keep exact values as
+  sourced facts, and accept an edit at each phase or gate.
+- Read the accepted revision back after any context compaction and before the
+  final answer.
+
+Skip it only where step 1 stops: a direct answer, a calculation, or an
+isolated rewrite.
+
 ## Common local routes
 
 - Repository architecture, file relationships, or codebase questions:
