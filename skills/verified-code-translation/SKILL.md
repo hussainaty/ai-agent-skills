@@ -37,6 +37,23 @@ the evidence behind every rule below.
    qualified humans and qualified tools (see
    [references/safety-critical.md](references/safety-critical.md)).
 
+## Working context
+
+The orchestrator runs on the `working-context-notebook` flow for the whole
+port. A port outlasts many context windows, and one drifted number
+invalidates the evidence.
+
+- Record as facts, with sources, everything Phase 0 freezes: the source
+  commit, the oracle command, corpus size, toolchain versions, and the
+  classification. A frozen fact is never rewritten in place.
+- Log test-corpus runs, differential-test output, and reviewer verdicts as
+  raw events. Keep in the notebook only the counts and the failing case ids.
+- Track units in the tracker by dependency order. Implementers and reviewers
+  get the facts they need by id. They never get each other's context, and
+  only the orchestrator edits the notebook.
+- Read the accepted revision back at the start of every phase. The Phase 5
+  evidence package quotes the raw events, not the notebook.
+
 ## Phase 0 — Classify and freeze
 
 - Record source/target languages, target platform/ABI, criticality level

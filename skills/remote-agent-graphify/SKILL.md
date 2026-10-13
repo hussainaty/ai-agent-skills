@@ -63,6 +63,12 @@ to verify it. Keep the graph output on the workspace volume or persistent
 checkout so later Coder or TrueForge runs can refresh and query the same
 repository map.
 
+Hold the selected context in a working notebook (the `working-context-notebook`
+skill) on the same workspace volume or persistent checkout. Record the
+repository commit, graph build time, and the selected nodes as sourced facts.
+A later run in either platform then reads the accepted revision back and can
+check whether the graph is stale before trusting it.
+
 ## Use the companion workflows
 
 Use the Graphify workflow for repository structure and evidence-backed codebase
