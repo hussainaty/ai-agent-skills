@@ -104,6 +104,7 @@ A missing skill is skipped and noted in `STATE.md`.
 | `document-multiple-repository` | Multi-repo documentation | credited in README |
 | `crafting-effective-readmes`, `backend-to-frontend-handoff-docs` | Docs | softaworks/agent-toolkit |
 | `session-wrap-up` | Dated per-session decision records + one index; read back only what matters | bundled |
+| `working-context-notebook` | All phases: editable working context beside a raw log, accepted at every gate | bundled |
 | `hooks-create` | Enforce procedural memory in code | vendor/coleam00-skills |
 | `task-observer`, `system-evolution-review`, `opportunity-scan`, `ablate-ai-layer` | Improve the AI layer from real runs | rebelytics/one-skill-to-rule-them-all; vendor/coleam00-skills |
 | `lesson-learned` | Capture lessons | softaworks/agent-toolkit |

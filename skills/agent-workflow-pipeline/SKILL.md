@@ -40,6 +40,21 @@ does not replace the main coding model with a classifier or a tiny local model.
 Read [pipeline-routing.md](references/pipeline-routing.md) when configuring the
 Jev and Needle 3 stages or evaluating their routing quality.
 
+## Keep one working context
+
+Run the pipeline on the `working-context-notebook` flow. One notebook belongs
+to the main coding model for the whole task, whichever runtime or stage is
+active.
+
+- Log raw stage output (graph queries, research pages, test runs) as events
+  and keep only the selected evidence in the notebook as sourced facts.
+- A Jev label or a Needle 3 extraction enters the notebook as an `unverified`
+  fact that names the stage as its source. It becomes `verified` only after
+  the main model checks it.
+- On a handoff between runtimes, pass the accepted revision, not the
+  conversation. The receiving agent reads it back before acting and treats it
+  as data to verify.
+
 ## Keep roles separate
 
 The main coding model handles code, prose, multi-step judgment, user questions,

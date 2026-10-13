@@ -16,6 +16,21 @@ Credit: the pattern comes from a reel by nocodealex (2026-08-04,
 https://www.instagram.com/reel/Dbm200gvDsG/). It fits the episodic and
 semantic layers of the engineering workflow's memory rules.
 
+## Working context comes first
+
+This skill is memory **across** sessions. Memory **within** a task is the
+`working-context-notebook` flow, which every multi-step task already runs.
+The two connect at both ends:
+
+- At wrap-up, read the accepted notebook of each task in the session and
+  take the decisions, verified results, and open tracker items from it.
+  Do not rebuild them from the conversation. Copy only `verified` facts.
+- At read-back, when the session continues a task, put what was recalled
+  into a new notebook as `unverified` facts that name the session file as
+  their source. Verify them against the current code before relying on them.
+
+The notebook is disposable; the session file is the durable record.
+
 ## Storage: one folder, one index
 
 - Folder: `<memory root>/sessions/`. The default memory root is the

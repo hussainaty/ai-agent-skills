@@ -13,6 +13,22 @@ Technique studied from Zha Art's short "Eggs in Blender (stylized)"
 script here is an original, fully procedural implementation of that recipe,
 tested on Blender 5.2.1 LTS with EEVEE.
 
+## Working context
+
+Run the job on the `working-context-notebook` flow. An animation job is long,
+and it fails when a number read early is misremembered later.
+
+- Record as sourced facts: the Blender version, source art path and size, the
+  part spec, every joint pivot and limit, frame ranges, and each tuned
+  parameter with the value that passed.
+- Log render and gate output as raw events. Keep in the notebook the gate
+  numbers and the frames that failed, not the logs.
+- Track shots and gates in the tracker. When a parameter changes, drop the
+  old fact with the reason and add the new one, so a rejected value is not
+  tried twice.
+- Read the accepted revision back before each render batch and before
+  delivery.
+
 ## First decision: does the character already exist as art?
 
 If the user supplies a drawing of the character, **do not rebuild or

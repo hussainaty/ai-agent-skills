@@ -12,7 +12,8 @@ Complete the user's intended outcome with evidence from the environment where th
 - Reconcile the current request, accepted corrections, prior authorization, and unfinished work. After a handoff or interruption, inspect current state before repeating mutations. Treat earlier reports as leads to verify, not fresh proof.
 - Inspect relevant code, tests, working-tree changes, and project instructions. Preserve unrelated edits. Use existing architecture knowledge, including a repository graph when available and relevant; if tooling is unavailable, inspect source directly and state the limitation.
 - Identify the actual user, role, tenant, environment, and entry point for the reported behavior. A restricted client view and an empty manager workspace are different cases.
-- State observable acceptance criteria. For multi-part work, keep a compact checklist connecting each requested outcome to its implementation, configuration/data needs, verification, and unresolved items. Use working notes; create persistent planning files only when useful or requested.
+- State observable acceptance criteria. For multi-part work, keep a compact checklist connecting each requested outcome to its implementation, configuration/data needs, verification, and unresolved items. Keep that checklist in the working notebook (the `working-context-notebook` skill) as tracker items; create other persistent planning files only when useful or requested.
+- Record each exact value the work depends on as a sourced fact in the notebook: target URL, environment, role, tenant, configuration value, migration name, test count. Log long test and build output as raw events and keep only the verified failure and its source. Read the accepted notebook back before each numbered section below and before the close-out.
 - Research unfamiliar behavior in current primary documentation when it affects the solution. Do not substitute broad research or installing more tools for examining the existing product.
 - Carry forward authorization already given. Ask only for a missing decision or authority that materially changes scope, cost, security, or an irreversible action; an authorized deployment or email does not need another conversational approval.
 
@@ -52,6 +53,6 @@ Choose evidence by risk, not by tool count. Do not automatically add tests for l
 
 ## 5. Close out accurately
 
-Lead with the delivered outcome, then give the relevant evidence and outstanding limitations. Mention files when helpful; use exact test counts only when observed. Distinguish local verification, live API checks, live browser checks, provider acceptance, and recipient-confirmed receipt.
+Lead with the delivered outcome, then give the relevant evidence and outstanding limitations. Mention files when helpful; use exact test counts only when observed. Take every figure in the close-out from a `verified` fact in the notebook or from the raw event it cites, not from recollection. Distinguish local verification, live API checks, live browser checks, provider acceptance, and recipient-confirmed receipt.
 
 For a broad request, reconcile every acceptance criterion before saying it is complete. Explicitly identify partial verification, unresolved failures, or required follow-up. Do not call a subset of tests a full suite, populated notes a finished media deliverable, or a queued deployment a live release. Avoid promising perfection or zero future defects.
