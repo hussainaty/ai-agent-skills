@@ -49,6 +49,10 @@ its phase, and where to install it.
 3. Create `workflow/STATE.md` from [templates/state.md](templates/state.md).
    If it already exists, **resume** from the last passed gate. Never restart
    or revert completed work.
+4. Open the working notebook (the `working-context-notebook` skill) for the
+   run. `STATE.md` records which gates passed. The notebook holds what the
+   orchestrator must not lose between them: exact decisions from the question
+   gate, versions, paths, commands, and each task's verdict.
 
 ## Phase 1 — Research first
 
@@ -188,6 +192,12 @@ spend money) still need the human's go-ahead at this point.
 
 ## Operating rules
 
+- Working context: at every gate, accept a notebook edit before recording the
+  gate in `STATE.md`, and read the accepted revision back before starting the
+  next phase. Give each implementer, juror, and tester the goal and the facts
+  it needs by id, not the conversation. Agents return facts with sources; only
+  the orchestrator edits the notebook. Log raw test, build, and review output
+  as events.
 - Personalize from the operator profile
   ([references/personalization.md](references/personalization.md)): language,
   approval style, deployment targets, and standing do/don't rules.

@@ -41,11 +41,25 @@ idea to a tested, documented, remembered result:
 The full list of collected skills, and where each one fits, is in
 [COLLECTION.md](COLLECTION.md).
 
+## Main working flow
+
+Every skill here runs on
+[`working-context-notebook`](skills/working-context-notebook): an editable
+notebook of exact, sourced facts beside an untouched raw log. Each edit is
+validated and checkpointed, and the accepted revision is read back after
+context compaction, so a value read early in a long task is still exact at
+the end. It needs only files and standard-library Python, so it works the
+same in Claude Code, Codex, and OpenCode. The idea comes from the Context
+Language Models paper (arXiv 2609.37725);
+[`references/implementations.md`](skills/working-context-notebook/references/implementations.md)
+lists what was taken from five open implementations and what was left out.
+
 ## Original skills
 
 | Skill | What it does |
 |---|---|
 | [`engineering-workflow`](skills/engineering-workflow) | The full workflow above: research, question gate, jury-reviewed tasks, testing team, integration, whole-project tests, project graph, memory. |
+| [`working-context-notebook`](skills/working-context-notebook) | The main working flow: goal, facts with sources, tracker, ruled-out attempts, and next step in one notebook; `check`/`accept` validate each edit, `recall` re-reads a bounded part of a logged event, `diff` and `history` show what changed, and budget reminders fire at 50, 75, and 90%. |
 | [`session-wrap-up`](skills/session-wrap-up) | One dated file of decisions (not dialogue) per session plus one index; reads back only the relevant entries next time. |
 | [`client-profiling`](skills/client-profiling) | Private per-client profiles from a CRM export, mapped to product capabilities. Refuses to write inside a git repo and skips phone/email columns. |
 | [`workflow-preflight`](skills/workflow-preflight) | Before substantive work, picks the smallest set of installed skills that covers the task, or decides none is needed. Includes routing evals. |
@@ -108,6 +122,8 @@ configuration are included.
   b and m. An automatic gate checked all 224 frames of the walk, wave, idle and speech; 223 passed and one has a single near-transparent
   pixel where two outlines meet. Motion reports found no pops after a head-nod sign flip was caught and fixed. The client artwork is not
   published. 19 tests cover the cutter, the patches, the edge gate, foot lock, blinks and lip-sync on synthetic figures (`tests/`).
+- **working-context-notebook:** 23 tests (`python tests/test_notebook.py`) cover the validator, recall, reminders, and the benchmark's answer key.
+  The recall benchmark (`scripts/bench.py`) has not been run against a model yet, so no measured gain is claimed.
 - **scrapegraphai-research:** used for the research behind `verified-code-translation`.
   Sources are in [`references/research.md`](skills/verified-code-translation/references/research.md).
 
@@ -133,5 +149,7 @@ listed in `research.md`, and Zha Art's "Eggs in Blender (stylized)"
 technique short. The memory rules follow the CoALA-style memory map in
 Nerdy Engineering Stuff's "Agent Memory Types Explained" short; the session
 wrap-up pattern comes from nocodealex's wrap-up skill reel; the review jury builds
-on tech-leads-club's `the-jury`. Code in `skills/` is original; `vendor/` keeps
+on tech-leads-club's `the-jury`. The working notebook follows the
+Context Language Models paper (Shao et al.) and Nerdy Engineering Stuff's short
+on it; only ideas were taken from the paper's non-commercial code. Code in `skills/` is original; `vendor/` keeps
 its authors' licenses.

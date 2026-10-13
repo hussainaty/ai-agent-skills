@@ -5,22 +5,22 @@
     {
       "name": "agent-workflow-pipeline",
       "description": "Coordinate Graphify, public research, implementation quality checks, Jev routing, and Needle 3 local tool calls across compatible coding agents, including Coder, TrueForge, Codex, Claude Code, OpenCode, and Hermes. Use for a cross-agent software task that needs more than one of these capabilities.",
-      "tree_sha256": "fc0385982cddc6b1ffd943c6999e6f03a3252440db57a6acc59e4a3cb950b6c3"
+      "tree_sha256": "cbe07d79ef2d5c12c073b424006991134e5d4cd11140b00be49cb21e41a45c39"
     },
     {
       "name": "blender-stylized-2d-animation",
       "description": "Build and animate stylized \"2D-look\" (cel/toon, anime-style) scenes in Blender through the Blender Lab MCP server or headless Blender, and animate EXISTING 2D character art without losing detail by cutting the original drawing into jointed parts (cut-out rig) instead of redrawing it. Covers flat colour bands, inverted-hull outlines, boil on twos, procedural fire, Geometry Nodes bubbles, joint pivots and limits, walk cycles with foot lock, bone-bent limbs, blinking, lip-sync from mouth shapes, and per-frame review gates. Use when the user asks for a toon, cel-shaded, NPR, cartoon, 2D-looking or anime-style Blender animation, or wants an existing character posed, animated, or turned into a sprite set. Not for photoreal rendering.",
-      "tree_sha256": "1091818ba5c64f8cc1719a8d52feeb7a47419c0a664afaebf47fea8f4f27061c"
+      "tree_sha256": "5fd408633359e859103a8ea059687a638d5ec3f933938a7e46011055924a9790"
     },
     {
       "name": "client-profiling",
       "description": "Builds private, per-client profiles from a CRM export (xlsx or csv) and the project's own product docs - archetype, decision unit, needs mapped to product capabilities, deal risks, recommended pitch, and scope control - so sales follow-ups and engineering requirements reflect each client. Use when the user shares a CRM, lead list, or client notes and asks to profile, segment, prioritize, or prepare for clients, or when the engineering workflow needs client context. Keeps all client data local and out of repositories.",
-      "tree_sha256": "d86cea07f15e6f9e098f26e231cd294df72a1e5a263cb32538663c538fb03a71"
+      "tree_sha256": "62222a8cd49edb4550607daff576a3dff033abc33b05fb83ce2db91ec04b714d"
     },
     {
       "name": "engineering-workflow",
       "description": "Runs a full software-engineering workflow from idea to documented release - research first, then every open question handed to the human, then tasks split into a dependency graph where each task has an implementer agent and a reviewer jury with a judge, a testing team after every task, integration of the tasks, whole-project testing, a project knowledge graph, and a memory update. Use when the user wants to build, rebuild, or substantially extend a product or system end to end, asks for \"the full workflow\", \"research then build\", \"plan and implement with reviewers\", or wants a client project delivered with evidence. Not for one-line fixes, quick questions, or a single isolated change.",
-      "tree_sha256": "e5d3ae7c656f98d50f514027376f584be5a678a7538dfd88007f6de18520aea1"
+      "tree_sha256": "d6e68e046fb31e90f228af422d2095e4dcf816f0d1856c4f63c81ac6cd0f475f"
     },
     {
       "name": "global-memory-recovery",
@@ -30,32 +30,37 @@
     {
       "name": "product-quality-loop",
       "description": "Plan, implement, and verify scoped software changes through working user journeys, proportionate tests, visual inspection, and authorized release checks. Use for feature work, bug fixes, UI improvements, and release completion; not read-only questions or draft-only requests.",
-      "tree_sha256": "158b39520885b767ecf547dcc6bd47158aa398848a7aa09b73e1370a5f522823"
+      "tree_sha256": "f582885d2a236a716569b28a352bedd985cdffc0cfbfa75177031cf4d60fa1af"
     },
     {
       "name": "remote-agent-graphify",
       "description": "Prepare and maintain Graphify repository context for coding agents running in Coder workspaces or the TrueForge harness. Use for repository exploration, architecture questions, and context refreshes; not for provisioning either platform.",
-      "tree_sha256": "eff5bb967b6f8f7a08f03aef6bf8a8813239ad04db107c84ac38897139d08606"
+      "tree_sha256": "ff34848dbc7b113c4df9e64f02f35daa52a30c41b63eb396fed508ca1f858d94"
     },
     {
       "name": "scrapegraphai-research",
       "description": "Prefer ScrapeGraphAI v2 and Exa's browser-based search for permitted public-web research, source discovery, and structured fact extraction when available. Also installs, updates, and uses Agent Reach for platform content such as YouTube, GitHub, Reddit, Twitter/X, Bilibili, and RSS, including when the user pastes an Agent Reach install.md or update.md link. Works without an API key through the local open-source ScrapeGraphAI library or the user's own signed-in accounts. Do not use for local-only tasks, private data, access-control bypasses, or unsolicited contact enrichment.",
-      "tree_sha256": "0dae7d1827a259a828083d3ceda46d954e036df758f87e1d1f57cd634830fc18"
+      "tree_sha256": "50b694b07ae3d1ecc22b01b36cc14c5cb5c92c1248390fe34d46f60fbc57fed8"
     },
     {
       "name": "session-wrap-up",
       "description": "Writes a dated end-of-session summary of decisions, outcomes, open threads, and links between tasks into one memory folder with one index, and reads back only the relevant entries at the start of the next session. Use when the user says \"wrap up\", \"save this session\", \"end of session\", \"remember what we did\", or is about to close or switch sessions, accounts, or agents; and at session start when continuing earlier work.",
-      "tree_sha256": "00eba994e02e83945da1ee8132a6be50178b3d1293abede5ec519a3fc9d6bb89"
+      "tree_sha256": "bac9312362f664c237ea2a9105045dda9511d5eb6f88cf1ee5d4720f198d68ea"
     },
     {
       "name": "verified-code-translation",
       "description": "Translate a codebase or module from one programming language to another \u2014 especially high-level to low-level (Python/JS/Go/Zig/C++ -> C, Rust, or assembly) \u2014 with a dependency-ordered plan, cycle and deadlock untangling, isolated implementer/adversarial-reviewer pairs in Docker containers that scale up and down, black-box equivalence testing, and a traceable evidence package suitable for safety-critical review (DO-178C, IEC 61508, IEC 60880, NASA). Use for ports, rewrites, transpilation, \"rewrite X in Rust/C\", legacy migration, or when the user asks to replace an implementation while keeping identical behaviour. Not for greenfield code or single-function snippets.",
-      "tree_sha256": "f8a894549d791aca75fe7ac52d8b7731b5dd1420a1bdc6567bf60e365c5f4739"
+      "tree_sha256": "f70fcffe15dbdcc6444b3a197212a9e0d7962caec058e86cfd6910bc03eb875b"
     },
     {
       "name": "workflow-preflight",
       "description": "Route a substantive coding, research, cross-agent, or production request before work begins. Select the smallest compatible set of installed skills, or explicitly conclude that no specialized skill is needed; discover an online skill only for a real capability gap. Use before work that may benefit from repository context, public research, implementation, verification, or external systems. Do not use for a direct factual answer, simple calculation, or isolated rewrite.",
-      "tree_sha256": "eb3ea63920ab35031d648af0bd85e3277f159d710a53eecc18de71581b1bb55f"
+      "tree_sha256": "5af39b6ee329e375435d2f999ab73f710987244b2a2783f4c574a0fd0eed0280"
+    },
+    {
+      "name": "working-context-notebook",
+      "description": "Keeps an editable working notebook (goal, exact facts with sources, tracker, notes, next step) beside an untouched raw log, validates and checkpoints every edit, and reads the accepted revision back at each phase boundary and after any context compaction, so an exact value read early in a long task is still correct at the end. Use as the main working flow for any multi-step task - long coding or debugging sessions, deep research, log analysis, and coordinating subagents - and whenever another skill runs for more than a few steps. Not for a direct answer, a simple calculation, or a one-step edit, and not a replacement for memory across sessions.",
+      "tree_sha256": "07fd45571435243e8e2bdb6946314b813202ddc8be6bff916adb8aa3e4833b69"
     }
   ]
 }
