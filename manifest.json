@@ -43,6 +43,11 @@
       "tree_sha256": "50b694b07ae3d1ecc22b01b36cc14c5cb5c92c1248390fe34d46f60fbc57fed8"
     },
     {
+      "name": "session-supervisor",
+      "description": "Manage related coding-agent sessions from one supervisor, delegate implementation and testing to suitable workers, and review their results.",
+      "tree_sha256": "c25dbbe5703b89c3d0b1a716e5bbbab84961edf4716e2a4f5ca7048d1eb06955"
+    },
+    {
       "name": "session-wrap-up",
       "description": "Writes a dated end-of-session summary of decisions, outcomes, open threads, and links between tasks into one memory folder with one index, and reads back only the relevant entries at the start of the next session. Use when the user says \"wrap up\", \"save this session\", \"end of session\", \"remember what we did\", or is about to close or switch sessions, accounts, or agents; and at session start when continuing earlier work.",
       "tree_sha256": "bac9312362f664c237ea2a9105045dda9511d5eb6f88cf1ee5d4720f198d68ea"

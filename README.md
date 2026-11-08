@@ -54,6 +54,10 @@ Language Models paper (arXiv 2609.37725);
 [`references/implementations.md`](skills/working-context-notebook/references/implementations.md)
 lists what was taken from five open implementations and what was left out.
 
+## Session supervisor
+
+[`session-supervisor`](skills/session-supervisor) coordinates related worker sessions, delegates implementation and tests, and supports project-scoped Codex and Claude Code session controls. OpenCode and Hermes require their own separately configured bridges. Automatic Codex wakeup after a rate limit is not yet connected to a verified host dispatcher. See the skill README for setup and limitations.
+
 ## Original skills
 
 | Skill | What it does |
