@@ -58,9 +58,32 @@ def _validate_timeout(timeout: Any) -> float:
     return value
 
 
+def resolve_codex() -> str:
+    """Find the Codex CLI: PATH, then CODEX_CLI_PATH (env or ~/.codex/config.toml), then the app's bundled copy."""
+    import glob
+    import re
+    import shutil
+    found = shutil.which("codex")
+    if found:
+        return found
+    candidates = [os.environ.get("CODEX_CLI_PATH", "")]
+    try:
+        with open(os.path.join(os.path.expanduser("~"), ".codex", "config.toml"), encoding="utf-8") as fh:
+            config = fh.read()
+        candidates += re.findall(r"""^\s*CODEX_CLI_PATH\s*=\s*['"]([^'"]+)['"]""", config, re.M)
+    except OSError:
+        pass
+    bundled = glob.glob(os.path.join(os.environ.get("LOCALAPPDATA", ""), "OpenAI", "Codex", "bin", "*", "codex.exe"))
+    candidates += sorted(bundled, key=os.path.getmtime, reverse=True)
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
+    return "codex"
+
+
 def _validate_command(command: Any) -> list[str]:
     if command is None:
-        return list(DEFAULT_COMMAND)
+        return [resolve_codex(), *DEFAULT_COMMAND[1:]]
     if isinstance(command, (str, bytes)):
         raise TypeError("command must be a sequence of strings")
     try:

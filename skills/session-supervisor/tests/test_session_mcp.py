@@ -56,5 +56,13 @@ class SessionMCPTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result['automatic_wakeup_available'])
         self.assertFalse(result['queued'])
 
+    async def test_codex_delegation_requires_both_authorizations(self):
+        import codex_jobs
+        with patch.object(codex_jobs, 'start', side_effect=AssertionError('should not call')):
+            with self.assertRaises(PermissionError): await m.codex_task_start('p', 'work', authorized=True)
+            with self.assertRaises(PermissionError): await m.codex_task_start('p', 'work', model_use_authorized=True)
+        with patch.object(codex_jobs, 'cancel', side_effect=AssertionError('should not call')):
+            with self.assertRaises(PermissionError): await m.codex_task_cancel('job')
+
 
 if __name__ == '__main__': unittest.main()

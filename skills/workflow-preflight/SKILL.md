@@ -37,10 +37,43 @@ skill or delay straightforward work with unnecessary research.
    candidate, but do not install it, connect a service, or add credentials
    without the user's explicit authorization.
 
+## Why routing is explicit
+
+Large skill libraries break implicit routing. When irrelevant skills were added
+to a library, agents loaded the right skill far less often (recall 73.6% to
+27.4% at 1,000 extra skills; runs loading no skill rose from 9.3% to 51.6%),
+even though the same models still picked the right skills 73.9% of the time
+when asked only to choose (arXiv 2610.18522). Preselection beat asking the
+agent to plan its own skill use. So:
+
+- Name the selected skills in the route line and in every worker brief
+  ("Use the `<skill>` skill."); do not rely on a worker discovering them.
+- Keep each runtime's always-visible skill set small; park large collections
+  (for example a 98-skill research pack) outside the default skill roots and
+  link to them on demand.
+- Prefer a focused skill over a comprehensive one, and do not ship a skill the
+  agent wrote for itself without testing it: curated skills raised pass rates
+  by about 16 points on average while self-generated skills gave no benefit,
+  and focused skills with 2-3 modules beat comprehensive documentation
+  (SkillsBench, arXiv 2602.12670). Some tasks regress with a skill loaded, so
+  measure a new skill against the no-skill run.
+- Generic engineering skill packs rarely help on their own: 39 of 49 public
+  software-engineering skills changed nothing, an average of +1.2%, and harmful
+  ones anchored the agent on their own templates (SWE-Skills-Bench, arXiv
+  2603.15401). The task's explicit instructions and the repository's
+  conventions win over any skill's template; adopt an outside skill only after
+  it beats the no-skill run on this project's tasks.
+
 Use [evaluation.md](references/evaluation.md) when changing this skill or
 checking its routing behavior. The test cases separate trigger accuracy from
 route quality, so a broad description does not turn into indiscriminate skill
 loading.
+
+## Preferred engineering flow
+
+For substantive software tasks, first consider the installed Addy Osmani engineering skills as the main lifecycle: `idea-refine` or `spec-driven-development` when requirements need definition; `planning-and-task-breakdown` for planning; `test-driven-development` and `incremental-implementation` for implementation; `debugging-and-error-recovery`, `code-review-and-quality`, and relevant domain skills for verification and review; and `shipping-and-launch` when release is requested. Select only the stages and skills that fit the task, alongside existing skills such as `session-supervisor` and `product-quality-loop`; do not load all 25 by default.
+
+For behavior changes where meaningful automated tests are practical, prefer a focused failing test before implementation, followed by implementation and a passing test. Respect the user's instructions, existing repository practices, and proportionate verification; do not invent tests for trivial or unsuitable tasks. Batch related delegated implementation and test-fix work as directed by `session-supervisor`, preserving worker sessions and minimizing supervisor polling. These preferences do not override higher-priority instructions or authorize publication, purchases, or external actions.
 
 ## Open the working context
 
@@ -71,7 +104,7 @@ isolated rewrite.
 - Coder workspace or TrueForge handoff: `remote-agent-graphify`.
 - Cross-agent work that needs several of the routes above: `agent-workflow-pipeline`.
 - Building or substantially extending a product end to end (research, questions,
-  jury-reviewed tasks, testing, integration, graph, memory): `engineering-workflow`.
+  risk-appropriate planning, verification, integration and documentation): `engineering-workflow`.
 - Profiling or prioritizing clients from a CRM export: `client-profiling`.
 - Browser interaction or web-app testing: `agent-browser`.
 - A repeatable end-to-end test suite for a web or mobile app: `npx e2e init`

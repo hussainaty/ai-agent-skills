@@ -5,7 +5,7 @@
     {
       "name": "agent-workflow-pipeline",
       "description": "Coordinate Graphify, public research, implementation quality checks, Jev routing, and Needle 3 local tool calls across compatible coding agents, including Coder, TrueForge, Codex, Claude Code, OpenCode, and Hermes. Use for a cross-agent software task that needs more than one of these capabilities.",
-      "tree_sha256": "cbe07d79ef2d5c12c073b424006991134e5d4cd11140b00be49cb21e41a45c39"
+      "tree_sha256": "397563324c8b17acf62add302fb71e2621e6b1108f905546e8fd6f8f4e7b04a0"
     },
     {
       "name": "blender-stylized-2d-animation",
@@ -19,8 +19,8 @@
     },
     {
       "name": "engineering-workflow",
-      "description": "Runs a full software-engineering workflow from idea to documented release - research first, then every open question handed to the human, then tasks split into a dependency graph where each task has an implementer agent and a reviewer jury with a judge, a testing team after every task, integration of the tasks, whole-project testing, a project knowledge graph, and a memory update. Use when the user wants to build, rebuild, or substantially extend a product or system end to end, asks for \"the full workflow\", \"research then build\", \"plan and implement with reviewers\", or wants a client project delivered with evidence. Not for one-line fixes, quick questions, or a single isolated change.",
-      "tree_sha256": "d6e68e046fb31e90f228af422d2095e4dcf816f0d1856c4f63c81ac6cd0f475f"
+      "description": "Run a proportionate end-to-end engineering workflow for substantial builds, changes and releases, using existing context, risk-based review and verification, and human decisions only when needed.",
+      "tree_sha256": "202af3f1a76cc0d5eda103be95dc546e16d21b655b8eaf7314b7bfc1f8ccfb66"
     },
     {
       "name": "global-memory-recovery",
@@ -45,7 +45,7 @@
     {
       "name": "session-supervisor",
       "description": "Manage related coding-agent sessions from one supervisor, delegate implementation and testing to suitable workers, and review their results.",
-      "tree_sha256": "c25dbbe5703b89c3d0b1a716e5bbbab84961edf4716e2a4f5ca7048d1eb06955"
+      "tree_sha256": "e32bf7633ed7058d5ddde5d8f679ee6220c13a108033bd439c5b08a5de69c649"
     },
     {
       "name": "session-wrap-up",
@@ -60,7 +60,7 @@
     {
       "name": "workflow-preflight",
       "description": "Route a substantive coding, research, cross-agent, or production request before work begins. Select the smallest compatible set of installed skills, or explicitly conclude that no specialized skill is needed; discover an online skill only for a real capability gap. Use before work that may benefit from repository context, public research, implementation, verification, or external systems. Do not use for a direct factual answer, simple calculation, or isolated rewrite.",
-      "tree_sha256": "5af39b6ee329e375435d2f999ab73f710987244b2a2783f4c574a0fd0eed0280"
+      "tree_sha256": "6dc6f695bd192047c4318f0d7f476ba172234c89853477908007b80f8a0a93ee"
     },
     {
       "name": "working-context-notebook",

@@ -11,6 +11,7 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 import claude_adapter
 from codex_adapter import CodexAdapter
+from codex_session_metadata import resolve_codex
 
 server = MCPServer('session-supervisor')
 
@@ -19,11 +20,12 @@ server = MCPServer('session-supervisor')
 async def session_capabilities() -> dict[str, Any]:
     """Discover installed clients without inference or credential disclosure."""
     return {
-        'codex_cli_found': bool(shutil.which('codex')),
+        'codex_cli_found': resolve_codex() != 'codex' or bool(shutil.which('codex')),
         'claude_cli_found': bool(shutil.which('claude')),
         'codex_native_app_tools': 'Discover in the current host; not exposed to this process.',
         'claude_history': 'Agent SDK optional; CLI alone has incomplete history.',
-        'codex_automatic_wakeup': False,
+        'codex_automatic_wakeup': 'agent_relay.py watch-codex resumes a chat after a confirmed usage-limit stop',
+        'codex_delegation': 'codex_task_start / codex_task_wait run Codex as a background worker',
         'note': 'Client availability does not prove authentication, pricing or provider access.',
     }
 
@@ -76,7 +78,10 @@ async def codex_wakeup_capability() -> dict[str, Any]:
     """Report whether this package can actually wake a rate-limited desktop chat."""
     return {'automatic_wakeup_available': False, 'queued': False,
             'reason': 'The current adapter lacks host-owned atomic idle-only dispatch and deduplication.',
-            'note': 'Do not send a prompt to an active or uncertain session. Native app tools may have other capabilities.'}
+            'note': 'Do not send a prompt to an active or uncertain session. Native app tools may have other capabilities.',
+            'relay': ('agent_relay.py watch-codex resumes a chat headlessly (codex exec resume) only after the '
+                      "chat's own record shows a usage-limit stop, the limit has reset, and the chat has been "
+                      'quiet for 2 minutes. That check is not atomic: a human typing at that moment can race it.')}
 
 
 @server.tool()
@@ -141,6 +146,49 @@ async def claude_tag(project: str, session_id: str, tag: str | None, authorized:
     if authorized is not True:
         raise PermissionError('specific session authorization required')
     return await asyncio.to_thread(claude_adapter.tag_session, project, session_id, tag, authorized=True)
+
+
+@server.tool()
+async def codex_task_start(project: str, prompt: str, authorized: bool = False,
+                           model_use_authorized: bool = False, sandbox: str = 'workspace-write',
+                           thread_id: str | None = None) -> dict[str, Any]:
+    """Delegate one complete work package to Codex as a background job; returns a job_id at once.
+
+    Send one comprehensive brief (goal, files, acceptance criteria, test commands, stop conditions),
+    not many small tasks. thread_id continues an existing Codex chat instead of starting a new one.
+    sandbox is 'workspace-write' (edits inside project) or 'read-only' (review/research).
+    """
+    if authorized is not True or model_use_authorized is not True:
+        raise PermissionError('delegating to Codex and its model use must be authorized')
+    import codex_jobs
+    return await asyncio.to_thread(codex_jobs.start, project, prompt, sandbox=sandbox, thread_id=thread_id)
+
+
+@server.tool()
+async def codex_task_wait(job_id: str, timeout_seconds: int = 240) -> dict[str, Any]:
+    """Block up to timeout_seconds for a Codex job; returns status, final message, usage, thread_id.
+
+    A timeout leaves the job running: call again rather than starting a duplicate. Review the
+    actual diff and test evidence yourself; the final message is the worker's own claim.
+    """
+    import codex_jobs
+    return await asyncio.to_thread(codex_jobs.wait, job_id, timeout_seconds)
+
+
+@server.tool()
+async def codex_task_cancel(job_id: str, authorized: bool = False) -> dict[str, Any]:
+    """Stop a running Codex job and its child processes."""
+    if authorized is not True:
+        raise PermissionError('cancellation must be authorized')
+    import codex_jobs
+    return await asyncio.to_thread(codex_jobs.cancel, job_id)
+
+
+@server.tool()
+async def codex_task_list(limit: int = 10) -> list[dict[str, Any]]:
+    """Recent Codex jobs with status and token usage, newest first."""
+    import codex_jobs
+    return await asyncio.to_thread(codex_jobs.list_jobs, limit)
 
 
 if __name__ == '__main__':
